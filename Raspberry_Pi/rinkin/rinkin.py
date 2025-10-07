@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import asyncio
+import serial
 from smbus2 import SMBus
 from paho.mqtt import client as mqtt_client
 from paho.mqtt.enums import CallbackAPIVersion
@@ -23,7 +24,15 @@ def on_mqtt_connect(client, userdata, flags, rc, properties):
 
 def on_message(client, userdata, msg):
     print(f"topic: {msg.topic}, payload: {msg.payload.decode()}")
-    
+    if msg.topic == "/motor":
+        speed = float(msg.payload.rstrip(b'\x00'))
+        speed = max(0, min(speed, 0.95))
+        cmd = f"#MOT {speed}\n".encode('utf8')
+        print(f"> {repr(cmd)}")
+        ser.write(cmd)
+
+
+ser = serial.Serial("/dev/ttyS0", 921600)
 
 client = mqtt_client.Client(CallbackAPIVersion(2), client_id="raspberry-pi")
 client.on_connect = on_mqtt_connect
@@ -37,6 +46,8 @@ async def main():
     await imu_task
 
 asyncio.run(main())
+
+ser.close()
 
 """
 
