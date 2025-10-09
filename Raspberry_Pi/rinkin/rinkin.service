@@ -1,0 +1,15 @@
+[Unit]
+Description=Rinkin
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/home/rinkin/rinkin/.venv/bin/python /home/rinkin/rinkin/rinkin.py
+WorkingDirectory=/home/rinkin/rinkin/
+Restart=on-failure
+Environment=PYTHONUNBUFFERED=1
+User=rinkin
+Group=rinkin
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,15 @@
+[submodule "rinkin-ui/lib/imgui"]
+	path = rinkin-ui/lib/imgui
+	url = https://github.com/ocornut/imgui
+[submodule "rinkin-ui/lib/rlImGui"]
+	path = rinkin-ui/lib/rlImGui
+	url = https://github.com/raylib-extras/rlImGui
+[submodule "rinkin-ui/lib/raylib"]
+	path = rinkin-ui/lib/raylib
+	url = https://github.com/raysan5/raylib
+[submodule "rinkin-ui/lib/ini"]
+	path = rinkin-ui/lib/ini
+	url = https://github.com/rxi/ini
+[submodule "rinkin-ui/lib/mosquitto"]
+	path = rinkin-ui/lib/mosquitto
+	url = https://github.com/eclipse-mosquitto/mosquitto
