@@ -13,6 +13,14 @@ cd /home/rinkin/setup
 sudo cp -u mosquitto.conf /etc/mosquitto/conf.d/
 sudo systemctl restart mosquitto
 
+cd /home/rinkin/setup/mediamtx
+sudo cp -u mediamtx /usr/bin/
+sudo cp -u mediamtx.yml /etc/
+sudo cp -u mediamtx.service /etc/systemd/system
+sudo systemctl daemon-reload
+sudo systemctl enable mediamtx.service
+sudo systemctl start mediamtx.service
+
 cd /home/rinkin/rinkin
 python3 -m venv .venv
 ls .venv/bin
