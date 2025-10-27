@@ -12,9 +12,14 @@ function setup()
 end
 
 function loop()
-    ImGui.Begin("Video")
-    v:display()
-    if ImGui.Button("Start") then v:start() end
-    if ImGui.Button("Stop") then v:stop() end
+    if ImGui.Begin("Video") then
+        v:display()
+        if ImGui.Button("Start") then v:start() end
+        if ImGui.Button("Stop") then v:stop() end
+    end
     ImGui.End("Video")
+    if ImGui.Begin("Script") then
+        if ImGui.Button("Reload") then dofile("lua/main.lua") end
+    end
+    ImGui.End()
 end
