@@ -23,17 +23,23 @@ static float heading[256] = {0};
 static int heading_offset = 0;
 float pitch = 0.0f, roll = 0.0f;
 
+void lua_simple_fcall(lua_State *L, const char *fname) {
+	lua_getglobal(L, fname);
+	if(lua_isfunction(L, -1)) {
+		int res = lua_pcall(L, 0, 0, 0)	;
+		if(res != LUA_OK)
+			fprintf(stderr, "%s\n", lua_tostring(L, -1));
+	}
+	lua_settop(L, 0);
+}
+
 int main(int argc, char* argv[]) {
 	lua_State *L = luaL_newstate();
 	if(!L) FATAL("failed to initialize Lua");
 	luaL_openlibs(L);
 	lua_register_bindings(L);
 	mqtt_init();
-	int res = luaL_dofile(L, "lua/main.lua");
-	if(res != LUA_OK) {
-		fprintf(stderr, "%s\n", lua_tostring(L, -1));
-		lua_settop(L, 0);
-	}
+	
 	
 	int screenWidth = 1280;
 	int screenHeight = 800;
@@ -64,6 +70,14 @@ int main(int argc, char* argv[]) {
     	model.materials[i].shader = shader;
 	}
 
+	int res = luaL_dofile(L, "lua/main.lua");
+	if(res != LUA_OK) {
+		fprintf(stderr, "%s\n", lua_tostring(L, -1));
+		lua_settop(L, 0);
+	}
+
+	lua_simple_fcall(L, "setup");
+
 	while (!WindowShouldClose()) {
 		while(mqtt_has_message()) {
 			lua_getglobal(L, "mqtt");
@@ -83,6 +97,8 @@ int main(int argc, char* argv[]) {
 				break;
 			}
 		}
+		
+
 		float motor = GetGamepadAxisMovement(0, 3) * -1;
 		static float last_motor = 0;
 		if(motor != last_motor) {
@@ -115,6 +131,8 @@ int main(int argc, char* argv[]) {
 			EndMode3D();
 
 			rlImGuiBegin();
+
+			lua_simple_fcall(L, "loop");
 
 			ui();
 

@@ -10,13 +10,12 @@ LIBMOSQUITTO = $(MOSQUITTO_DIR)/lib/libmosquitto.a
 LIBLUA = $(LUA_DIR)/liblua.a
 STATIC_LIBS = $(LIBRAYLIB) $(LIBMOSQUITTO) $(LIBLUA)
 
-INCLUDE_DIRS = -I$(IMGUI_DIR) -Ilib/rlImGui -I$(RAYLIB_DIR) -I$(RAYLIB_DIR)/../examples/shaders -Ilib/ini/src -I$(MOSQUITTO_DIR)/include -I$(LUA_DIR)
+INCLUDE_DIRS = -I$(IMGUI_DIR) -Ilib/rlImGui -I$(RAYLIB_DIR) -I$(RAYLIB_DIR)/../examples/shaders -I$(MOSQUITTO_DIR)/include -I$(LUA_DIR)
 CXXFLAGS = -std=c++11 -pedantic -Wall -MMD -MP $(INCLUDE_DIRS) -g
 LDFLAGS = -L$(RAYLIB_DIR) -L$(MOSQUITTO_DIR) -lGL $(shell pkg-config --libs mpv) -lraylib -lmosquitto -L$(LUA_DIR) -llua
 SRCS = $(shell find src -name *.cpp)
 SRCS += $(IMGUI_DIR)/imgui.cpp $(IMGUI_DIR)/imgui_demo.cpp $(IMGUI_DIR)/imgui_draw.cpp $(IMGUI_DIR)/imgui_tables.cpp $(IMGUI_DIR)/imgui_widgets.cpp
 SRCS += $(RLIMGUI_DIR)/rlImGui.cpp
-SRCS += lib/ini/src/ini.c
 OBJS = $(SRCS:%=build/%.o)
 DEPS = $(OBJS:.o=.d)
 
@@ -29,10 +28,6 @@ bin/$(EXE): $(OBJS) $(STATIC_LIBS)
 build/%.cpp.o: %.cpp
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-build/lib/ini/src/ini.c.o: lib/ini/src/ini.c
-	mkdir -p $(dir $@)
-	$(CC) -ansi -pedantic -Wall -MMD -MP -c $< -o $@
 
 $(LIBRAYLIB):
 	make -C $(RAYLIB_DIR)
