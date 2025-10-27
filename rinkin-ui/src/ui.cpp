@@ -2,7 +2,6 @@
 #include <imgui.h>
 #include <rlImGui.h>
 #include <alloca.h>
-#include "config.h"
 #include "ui.h"
 #include "video.h"
 

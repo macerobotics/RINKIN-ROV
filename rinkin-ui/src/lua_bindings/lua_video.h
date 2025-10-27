@@ -1,0 +1,1 @@
+int lua_open_video(struct lua_State *L);
