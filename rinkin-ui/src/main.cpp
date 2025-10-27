@@ -174,5 +174,6 @@ int main(int argc, char* argv[]) {
 	UnloadModel(model);
     rlImGuiShutdown();
 	CloseWindow();
+	lua_close(L);
 	return 0;
 }
