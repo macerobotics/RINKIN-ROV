@@ -118,6 +118,8 @@ int main(int argc, char* argv[]) {
 		{
 			ClearBackground(DARKGRAY);
 
+			DrawFPS(10, 10);
+
 			BeginMode3D(camera);
 			{
 				BeginShaderMode(shader);
