@@ -102,11 +102,6 @@ int lua_video_start(lua_State *L) {
     const char *cmd[] = {"loadfile", v->url.c_str(), nullptr};
     mpv_command_async(v->mpv, 0, cmd);
     
-    //libvlc_video_set_format(mp, "RV24", width, height, width * 3);
-    //if(libvlc_media_player_play(mp) == -1) {
-    //    stop();
-    //    return false;
-    //}
     return 0;
 }
 
