@@ -5,8 +5,16 @@ extern "C" {
 }
 #include <raylib.h>
 #include <rlgl.h>
+#include <thread>
+#include <mutex>
 
 static const char url[] = "rtsp://192.168.1.18:8554/cam";
+
+std::mutex rgb_frame_mutex;
+
+void thread_func(AVFrame *rgb_frame) {
+
+}
 
 int main(int argc, char *argv[]) {
     const int screen_width = 1920, screen_height = 1080;
@@ -18,8 +26,8 @@ int main(int argc, char *argv[]) {
     av_dict_set(&options, "max_delay", "0", 0);
     Texture texture = {0};
     AVFormatContext *format_ctx = avformat_alloc_context();
-    struct SwsContext *img_convert_ctx = sws_alloc_context();
     avformat_open_input(&format_ctx, url, nullptr, &options);
+    av_dict_free(&options);
     TraceLog(LOG_INFO, "CODEC: format %s", format_ctx->iformat->long_name);
     avformat_find_stream_info(format_ctx, nullptr);
     AVStream *video_stream = nullptr;
@@ -71,7 +79,6 @@ int main(int argc, char *argv[]) {
     av_frame_get_buffer(rgb_frame, 0);
 
     SetTargetFPS(60);
-    int v_frame = 0;
     while(!WindowShouldClose()) {
         while(av_read_frame(format_ctx, packet) >= 0) {
             if(packet->stream_index == video_stream->index) {

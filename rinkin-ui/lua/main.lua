@@ -1,5 +1,5 @@
 function mqtt.on_message(topic, payload)
-    print("lua: mqtt: topic=" .. topic .. " payload=" ..payload)
+    --print("lua: mqtt: topic=" .. topic .. " payload=" ..payload)
 end
 
 function setup()

@@ -1,8 +1,14 @@
 #include <string>
+#include <thread>
+#include <mutex>
 #include <atomic>
+#include <vector>
 #include <lua.hpp>
-#include <mpv/client.h>
-#include <mpv/render.h>
+extern "C" {
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libswscale/swscale.h>
+}
 #include <imgui.h>
 #include <raylib.h>
 #include <rlImGui.h>
@@ -12,14 +18,23 @@
 
 static const char metatable_name[] = "video";
 
+static bool is_network_init = false;
+
 struct Video {
+    Video() : is_running(false) {}
     std::string url;
     unsigned int width, height;
-    mpv_handle *mpv;
-    mpv_render_context *mpv_rd;
     Texture2D texture;
-    std::atomic_bool has_events, render_cb_called;
-    void *pixels;
+    // FFmpeg stuff
+    AVFormatContext *format_ctx = nullptr;
+    AVStream *video_stream = nullptr;
+    AVCodecContext *video_codec_ctx = nullptr;
+    AVFrame *frame = nullptr, *rgb_frame = nullptr;
+    AVPacket *packet = nullptr;
+    SwsContext *sws_ctx = nullptr;
+    std::atomic_bool is_running;
+    std::mutex rgb_frame_mutex;
+    std::thread *thread;
 };
 
 static Video *checkvideo(lua_State *L) {
@@ -29,17 +44,25 @@ static Video *checkvideo(lua_State *L) {
 }
 
 static void video_stop(Video *v) {
-    memset(v->pixels, 0, v->width * v->height * 3);
-    UpdateTexture(v->texture, v->pixels);
-    if(v->mpv_rd) {
-        mpv_render_context_free(v->mpv_rd);
-        v->mpv_rd = nullptr;
-    }
-    if(v->mpv) {
-        mpv_destroy(v->mpv);
-        v->mpv = nullptr;
+    if(v->is_running.exchange(false)) {
+        av_frame_free(&v->frame);
+        av_frame_free(&v->rgb_frame);
+        av_packet_unref(v->packet);
+        av_packet_free(&v->packet);
+        avcodec_free_context(&v->video_codec_ctx);
+        sws_freeContext(v->sws_ctx);
+        avformat_close_input(&v->format_ctx);
+        std::vector<unsigned char> black(v->width * v->height * 3, 0);
+        UpdateTexture(v->texture, black.data());
     }
 }
+
+#define LUA_AV_ERROR(x) \
+    do { \
+        char buf[AV_ERROR_MAX_STRING_SIZE]; \
+        av_strerror(x, buf, AV_ERROR_MAX_STRING_SIZE); \
+        luaL_error(L, "%s", buf); \
+    } while(0)
 
 static int lua_video_new(lua_State *L) {
     const char *url = luaL_checkstring(L, 1);
@@ -48,13 +71,12 @@ static int lua_video_new(lua_State *L) {
     int height = luaL_checkinteger(L, 3);
     if(height <= 0) luaL_error(L, "invalid video height");
     Video *v = (Video*)lua_newuserdata(L, sizeof(Video));
+    new (v) Video(); // placement new
     luaL_getmetatable(L, metatable_name);
     lua_setmetatable(L, -2);
     v->url = std::string(url);
     v->width = (unsigned int)width;
     v->height = (unsigned int)height;
-    v->pixels = calloc(width * height, 3);
-    if(!v->pixels) luaL_error(L, "failed to allocate memory");
     v->texture.id = rlLoadTexture(NULL, width, height, RL_PIXELFORMAT_UNCOMPRESSED_R8G8B8, 1);
     v->texture.width= width;
     v->texture.height = height;
@@ -63,45 +85,107 @@ static int lua_video_new(lua_State *L) {
     return 1;
 }
 
-static void mpv_wakeup_cb(void *ctx) {
-    Video *v = (Video*)ctx;
-    v->has_events = true;
-}
-
-static void mpv_render_cb(void * ctx) {
-    Video *v = (Video*)ctx;
-    v->render_cb_called = true;
+static void thread_func(Video *v) {
+    while(v->is_running) {
+        while(av_read_frame(v->format_ctx, v->packet) >= 0) {
+            if(v->packet->stream_index == v->video_stream->index) {
+                int ret = avcodec_send_packet(v->video_codec_ctx, v->packet);
+                av_packet_unref(v->packet);
+                if(ret < 0) {
+                    TraceLog(LOG_ERROR, "error sending packet");
+                    continue;
+                }
+                while(ret >= 0) {
+                    ret = avcodec_receive_frame(v->video_codec_ctx, v->frame);
+                    if(ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) break;
+                    v->rgb_frame_mutex.lock();
+                    sws_scale(v->sws_ctx, (uint8_t const *const *)v->frame->data, v->frame->linesize, 0,
+                              v->frame->height, v->rgb_frame->data, v->rgb_frame->linesize);
+                    v->rgb_frame_mutex.unlock();
+                }
+                break;
+            }
+        }
+    }
 }
 
 int lua_video_start(lua_State *L) {
     Video *v = checkvideo(L);
-    if(v->mpv) {
-        return 0;
-    }
-    v->mpv = mpv_create();
-    if(!v->mpv) luaL_error(L, "failed to initialize mpv");
-    mpv_set_option_string(v->mpv, "vo", "libmpv");
-    mpv_set_option_string(v->mpv, "profile", "low-latency");
-    if(mpv_initialize(v->mpv) < 0)
-        luaL_error(L, "failed to initialize mpv");
-    mpv_request_log_messages(v->mpv, "debug");
-    int advanced_control = 1;
-    mpv_render_param params[] = {
-        {MPV_RENDER_PARAM_API_TYPE, (void*)MPV_RENDER_API_TYPE_SW},
-        {MPV_RENDER_PARAM_ADVANCED_CONTROL, &advanced_control},
-        {(mpv_render_param_type)0, 0},
-    };
-    if(mpv_render_context_create(&v->mpv_rd, v->mpv, params) < 0) {
-        mpv_destroy(v->mpv);
-        v->mpv = nullptr;
-        luaL_error(L, "failed to initialize MPV context");
-    }
-    mpv_set_wakeup_callback(v->mpv, mpv_wakeup_cb, v);
-    mpv_render_context_set_update_callback(v->mpv_rd, mpv_render_cb, v);
+    if(v->is_running) return 0;
+//FFmpeg stuff
+    AVDictionary *options = nullptr;
+    if(av_dict_set(&options, "flags", "nobuffer", 0) < 0) luaL_error(L, "failed to set FFmpeg options");
+    if(av_dict_set(&options, "flags", "low_delay", 0) < 0) luaL_error(L, "failed to set FFmpeg options");
+    if(av_dict_set(&options, "max_delay", "0", 0) < 0) luaL_error(L, "failed to set FFmpeg options");
+    v->format_ctx = avformat_alloc_context();
+    int rc = avformat_open_input(&v->format_ctx, v->url.c_str(), nullptr, &options);
+    av_dict_free(&options);
+    if(rc < 0) LUA_AV_ERROR(rc);
 
-    const char *cmd[] = {"loadfile", v->url.c_str(), nullptr};
-    mpv_command_async(v->mpv, 0, cmd);
-    
+    TraceLog(LOG_INFO, "CODEC: format %s", v->format_ctx->iformat->long_name);
+
+    rc = avformat_find_stream_info(v->format_ctx, nullptr);
+    if(rc < 0) LUA_AV_ERROR(rc);
+
+    AVCodecParameters *video_params = nullptr;
+    for(unsigned int i = 0; i < v->format_ctx->nb_streams; i++) {
+        AVStream *tmp_stream = v->format_ctx->streams[i];
+        AVCodecParameters *tmp_params = tmp_stream->codecpar;
+        if(tmp_params->codec_type == AVMEDIA_TYPE_VIDEO) {
+            v->video_stream = tmp_stream;
+            video_params = tmp_params;
+            TraceLog(LOG_INFO, "CODEC: Resolution: %d x %d, type: %d", video_params->width, video_params->height, video_params->codec_id);
+        }
+    }
+    if(!v->video_stream) luaL_error(L, "failed to find video stream");
+
+    // DEbug
+    TraceLog(LOG_INFO, "CODEC: Resolution: %d x %d, type: %d", video_params->width, video_params->height, video_params->codec_id);
+
+    const AVCodec *video_codec = avcodec_find_decoder(video_params->codec_id);
+    if(!video_codec) luaL_error(L, "failed to find video codec");
+
+    TraceLog(LOG_INFO, "CODEC: %s ID %d, Bit rate %ld", video_codec->name, video_codec->id, video_params->bit_rate);
+    TraceLog(LOG_INFO, "FPS: %d/%d, TBR: %d/%d, TimeBase: %d/%d", v->video_stream->avg_frame_rate.num,
+             v->video_stream->avg_frame_rate.den, v->video_stream->r_frame_rate.num,
+             v->video_stream->r_frame_rate.den, v->video_stream->time_base.num, v->video_stream->time_base.den);
+
+    v->video_codec_ctx = avcodec_alloc_context3(video_codec);
+    if(!v->video_codec_ctx) luaL_error(L, "failed to allocate video codec context");
+
+    rc = avcodec_parameters_to_context(v->video_codec_ctx, video_params);
+    if(rc < 0) LUA_AV_ERROR(rc);
+
+    // Debug
+    TraceLog(LOG_INFO, "Codec context: width = %d, height = %d", v->video_codec_ctx->width, v->video_codec_ctx->height);
+
+    rc = avcodec_open2(v->video_codec_ctx, video_codec, NULL);
+    if(rc < 0) luaL_error(L, "failed to open codec");
+
+    v->frame = av_frame_alloc();
+    if(!v->frame) luaL_error(L, "failed to allocate frame");
+
+    v->packet = av_packet_alloc();
+    if(!v->packet) luaL_error(L, "failed to allocate packet");
+
+    TraceLog(LOG_INFO, "Codec context: width = %d, height = %d", v->video_codec_ctx->width, v->video_codec_ctx->height);
+
+    v->sws_ctx = sws_getContext(v->video_codec_ctx->width, v->video_codec_ctx->height, v->video_codec_ctx->pix_fmt,
+                             v->width, v->height, AV_PIX_FMT_RGB24, SWS_FAST_BILINEAR, 0, 0, 0);
+    if(!v->sws_ctx) luaL_error(L, "failed to get sws context");
+
+    v->rgb_frame = av_frame_alloc();
+    if(!v->rgb_frame) luaL_error(L, "failed to allocate RGB frame");
+
+    v->rgb_frame->format = AV_PIX_FMT_RGB24;
+    v->rgb_frame->width = v->width;
+    v->rgb_frame->height = v->height;
+
+    rc = av_frame_get_buffer(v->rgb_frame, 0);
+    if(rc < 0) LUA_AV_ERROR(rc);
+
+    v->is_running = true;
+    v->thread = new std::thread(thread_func, v);
     return 0;
 }
 
@@ -111,48 +195,15 @@ int lua_video_stop(lua_State *L) {
     return 0;
 }
 
-int display_frame(Video *v) {
-    rlImGuiImage((const Texture*)&v->texture);
-    return 0;
-}
-
 int lua_video_display(lua_State *L) {
     Video *v = checkvideo(L);
-    if(!v->mpv || !v->mpv_rd) {
-        return display_frame(v);
+    if(v->is_running) {
+        v->rgb_frame_mutex.lock();
+        UpdateTexture(v->texture, v->rgb_frame->data[0]);
+        v->rgb_frame_mutex.unlock();
     }
-    if(v->render_cb_called) {
-        v->render_cb_called = false;
-        uint64_t flags = mpv_render_context_update(v->mpv_rd);
-        if (flags & MPV_RENDER_UPDATE_FRAME) {
-            int size[2] = {(int)v->width, (int)v->height};
-            size_t pitch = v->width * 3;
-            mpv_render_param params[] = {
-                {MPV_RENDER_PARAM_SW_SIZE, size},
-                {MPV_RENDER_PARAM_SW_FORMAT, (void*)"rgb24"},
-                {MPV_RENDER_PARAM_SW_STRIDE, &pitch},
-                {MPV_RENDER_PARAM_SW_POINTER, v->pixels},
-                {(mpv_render_param_type)0, 0},
-            };
-            int r = mpv_render_context_render(v->mpv_rd, params);
-            if(r < 0) {
-                LOG("mpv_render_context_render error: %s\n", mpv_error_string(r));
-                video_stop(v);
-                return display_frame(v);
-            }
-            UpdateTexture(v->texture, v->pixels);
-        }
-        
-    }
-    if(v->has_events) {
-        while(true) {
-            mpv_event *e = mpv_wait_event(v->mpv, 0);
-            if(e->event_id == MPV_EVENT_NONE)
-                break;
-        }
-        v->has_events = false;
-    }
-    return display_frame(v);
+    rlImGuiImage((const Texture*)&v->texture);
+    return 0;
 }
 
 static int lua_video_to_string(lua_State *L) {
@@ -164,7 +215,7 @@ static int lua_video_to_string(lua_State *L) {
 static int lua_video_gc(lua_State *L) {
     Video *v = checkvideo(L);
     video_stop(v);
-    free(v->pixels);
+    v->~Video();
     return 0;
 }
 

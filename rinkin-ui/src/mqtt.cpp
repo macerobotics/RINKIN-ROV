@@ -46,7 +46,7 @@ static void on_disconnect(struct mosquitto *mosq, void *obj, int rc) {
 }
 
 static void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg) {
-	printf("topic: %s\tpayload:%s\n", msg->topic, (const char*)msg->payload);
+	//printf("topic: %s\tpayload:%s\n", msg->topic, (const char*)msg->payload);
 	queue_mutex.lock();
 	struct mqtt_message queued_msg = {std::string(msg->topic), std::string((const char*)msg->payload)};
 	mqtt_messages.push(queued_msg);
