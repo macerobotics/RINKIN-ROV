@@ -18,8 +18,6 @@ extern "C" {
 
 static const char metatable_name[] = "video";
 
-static bool is_network_init = false;
-
 struct Video {
     Video() : is_running(false) {}
     std::string url;
