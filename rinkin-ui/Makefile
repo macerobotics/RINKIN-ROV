@@ -5,9 +5,39 @@ RLIMGUI_DIR = lib/rlImGui
 MOSQUITTO_DIR = lib/mosquitto
 LUA_DIR = lib/lua-5.4.8/src
 FFMPEG_DIR = lib/ffmpeg-8.0
+FFMPEG_CONFIGURE = $(FFMPEG_DIR)/config.h
+FFMPEG_CONFIGURE_FLAGS = \
+	--disable-encoders \
+	--disable-hwaccels \
+	--disable-muxers \
+	--disable-filters \
+	--disable-indevs \
+	--disable-outdevs \
+	--disable-programs \
+	--disable-doc \
+	--disable-libdrm \
+	--disable-v4l2-m2m \
+	--disable-vaapi \
+	--disable-vdpau \
+	--disable-vulkan \
+	--disable-alsa \
+	--disable-sndio \
+	--disable-xlib \
+	--disable-sdl2 \
+	--disable-cuda \
+	--disable-nvdec \
+	--disable-nvenc \
+	--disable-opencl \
+	--disable-libopus \
+	--disable-lzma \
+	--disable-decoder=opus \
+	--disable-bzlib \
+	--extra-cflags="-Os -fPIC" \
+	--extra-ldflags="-s" \
+	$(FFMPEG_CROSS_FLAGS)
 
 LIBRAYLIB = $(RAYLIB_DIR)/libraylib.a
-LIBMOSQUITTO = $(MOSQUITTO_DIR)/lib/libmosquitto.a
+#LIBMOSQUITTO = $(MOSQUITTO_DIR)/lib/libmosquitto.a
 LIBLUA = $(LUA_DIR)/liblua.a
 LIBFFMPEG = $(FFMPEG_DIR)/libavformat/libavformat.a $(FFMPEG_DIR)/libavcodec/libavcodec.a $(FFMPEG_DIR)/libswscale/libswscale.a $(FFMPEG_DIR)/libavutil/libavutil.a 
 STATIC_LIBS = $(LIBRAYLIB) $(LIBMOSQUITTO) $(LIBLUA) $(LIBFFMPEG)
@@ -17,7 +47,7 @@ STATIC_LIBS = $(LIBRAYLIB) $(LIBMOSQUITTO) $(LIBLUA) $(LIBFFMPEG)
 
 INCLUDE_DIRS = -I$(IMGUI_DIR) -Ilib/rlImGui -I$(RAYLIB_DIR) -I$(RAYLIB_DIR)/../examples/shaders -I$(MOSQUITTO_DIR)/include -I$(LUA_DIR) -I$(FFMPEG_DIR)
 CXXFLAGS = -std=c++11 -pedantic -Wall -MMD -MP $(INCLUDE_DIRS) -g
-LDFLAGS = $(FFMPEG_LDFLAGS) -lpthread -lz
+LDFLAGS = $(FFMPEG_LDFLAGS) -lpthread -L$(MOSQUITTO_DIR) -lmosquitto -lz
 SRCS = $(shell find src -name *.cpp)
 SRCS += $(IMGUI_DIR)/imgui.cpp $(IMGUI_DIR)/imgui_demo.cpp $(IMGUI_DIR)/imgui_draw.cpp $(IMGUI_DIR)/imgui_tables.cpp $(IMGUI_DIR)/imgui_widgets.cpp
 SRCS += $(RLIMGUI_DIR)/rlImGui.cpp
@@ -35,13 +65,30 @@ build/%.cpp.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(LIBRAYLIB):
-	make -C $(RAYLIB_DIR)
+	$(MAKE) -C $(RAYLIB_DIR) $(RAYLIB_PLATFORM_OS)
 
 $(LIBMOSQUITTO):
-	make -C $(MOSQUITTO_DIR)/lib WITH_STATIC_LIBRARIES=yes WITH_SHARED_LIBRARIES=no WITH_TLS=no
+	$(MAKE) -C $(MOSQUITTO_DIR)/lib WITH_STATIC_LIBRARIES=no WITH_SHARED_LIBRARIES=yes WITH_TLS=no $(MOSQUITTO_OPTIONS)
 
 $(LIBLUA):
-	make -C $(LUA_DIR) liblua.a
+	$(MAKE) -C $(LUA_DIR) liblua.a
+
+$(FFMPEG_CONFIGURE):
+	cd $(FFMPEG_DIR) && ./configure $(FFMPEG_CONFIGURE_FLAGS)
+
+$(LIBFFMPEG) &: $(FFMPEG_CONFIGURE)
+	$(MAKE) -C $(FFMPEG_DIR)
+
+$(OBJS): $(LIBFFMPEG)
+
+WINDOWS_FFMPEG_CONFIGURE_FLAGS = \
+	--target-os=mingw32 \
+	--arch=x86_64 \
+	--enable-cross-compile \
+	--cross-prefix=x86_64-w64-mingw32-
+
+windows: 
+	$(MAKE) CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ LDFLAGS="$(LDFLAGS) -lws2_32 -lgdi32 -lopengl32 -lwinmm -lncrypt -lsecur32 -lcrypt32" FFMPEG_CROSS_FLAGS="$(WINDOWS_FFMPEG_CONFIGURE_FLAGS)" RAYLIB_PLATFORM_OS="PLATFORM_OS=WINDOWS" MOSQUITTO_OPTIONS="WITH_UNIX_SOCKETS=no WITH_DAEMON=no"
 
 .PHONY: run clean fullclean lsp
 
@@ -55,7 +102,7 @@ fullclean:
 	make -C $(RAYLIB_DIR) clean
 	make -C $(MOSQUITTO_DIR) clean
 	make -C $(LUA_DIR) clean
-	make -C $(FFMPEG_DIR) clean
+	make -C $(FFMPEG_DIR) distclean
 	rm -f .vscode/compile_commands.json
 
 lsp: .vscode/compile_commands.json
