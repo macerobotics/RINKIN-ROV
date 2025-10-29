@@ -5,3 +5,7 @@ imgui.ini
 .vscode/settings.json
 *.o
 liblua.a
+lib/ffmpeg-8.0/**/*.d
+lib/ffmpeg-8.0/**/*.a
+lib/ffmpeg-8.0/**/*.pc
+lib/ffmpeg-8.0/**/*.version
