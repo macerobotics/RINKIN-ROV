@@ -1,1 +1,0 @@
-int lua_open_mqtt(struct lua_State *L);

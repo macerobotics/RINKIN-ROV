@@ -1,13 +1,5 @@
-function mqtt.on_message(topic, payload)
-    --print("lua: mqtt: topic=" .. topic .. " payload=" ..payload)
-end
-
 function setup()
     local ip = "192.168.1.18"
-    mqtt.connect(ip, 1883)
-    mqtt.subscribe("/imu/heading")
-    mqtt.subscribe("/imu/pitch")
-    mqtt.subscribe("/imu/roll")
     v = video.new("rtsp://" .. ip .. ":8554/cam", 640, 480)
 end
 

@@ -8,7 +8,6 @@
 #include <rlImGui.h>
 #include <lua.hpp>
 #include "lua_bindings/lua_bindings.h"
-#include "mqtt.h"
 #include "config.h"
 #include "ui.h"
 #include "util.h"
@@ -38,7 +37,6 @@ int main(int argc, char* argv[]) {
 	if(!L) FATAL("failed to initialize Lua");
 	luaL_openlibs(L);
 	lua_register_bindings(L);
-	mqtt_init();
 	
 	
 	int screenWidth = 1280;
@@ -79,26 +77,6 @@ int main(int argc, char* argv[]) {
 	lua_simple_fcall(L, "setup");
 
 	while (!WindowShouldClose()) {
-		while(mqtt_has_message()) {
-			lua_getglobal(L, "mqtt");
-			lua_pushstring(L, "on_message");
-			lua_gettable(L, -2);
-			if(!lua_isfunction(L, -1)) {
-				lua_settop(L, 0);
-				break;
-			}
-			mqtt_message msg = mqtt_get_message();
-			lua_pushstring(L, msg.topic.c_str());
-			lua_pushstring(L, msg.payload.c_str());
-			int res = lua_pcall(L, 2, 0, 0);
-			if(res != LUA_OK) {
-				fprintf(stderr, "%s\n", lua_tostring(L, -1));
-				lua_settop(L, 0);
-				break;
-			}
-		}
-		
-
 		float motor = GetGamepadAxisMovement(0, 3) * -1;
 		static float last_motor = 0;
 		if(motor != last_motor) {
@@ -169,7 +147,6 @@ int main(int argc, char* argv[]) {
 		EndDrawing();
 	}
 
-	mqtt_deinit();
 	UnloadShader(shader);
 	UnloadModel(model);
     rlImGuiShutdown();
