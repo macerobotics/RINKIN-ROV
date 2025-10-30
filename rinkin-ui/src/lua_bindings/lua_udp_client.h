@@ -1,0 +1,1 @@
+int lua_open_udp_client(struct lua_State *L);

@@ -237,7 +237,7 @@ int lua_open_video(lua_State *L) {
     lua_pushvalue(L, -2);
     lua_settable(L, -3);
     luaL_setfuncs(L, video_lib_m, 0);
-    
+    lua_pop(L, 2);
     luaL_newlib(L, video_lib);
     return 1;
 }

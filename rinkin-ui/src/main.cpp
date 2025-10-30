@@ -11,6 +11,7 @@
 #include "config.h"
 #include "ui.h"
 #include "util.h"
+#include "windows_fix.h"
 
 #include "lighting.vs.h"
 #include "lighting.fs.h"
@@ -33,6 +34,9 @@ void lua_simple_fcall(lua_State *L, const char *fname) {
 }
 
 int main(int argc, char* argv[]) {
+	#ifdef _WIN32
+	windows_networking_init();
+	#endif
 	lua_State *L = luaL_newstate();
 	if(!L) FATAL("failed to initialize Lua");
 	luaL_openlibs(L);
@@ -152,5 +156,8 @@ int main(int argc, char* argv[]) {
     rlImGuiShutdown();
 	CloseWindow();
 	lua_close(L);
+	#ifdef _WIN32
+	windows_networking_cleanup();
+	#endif
 	return 0;
 }

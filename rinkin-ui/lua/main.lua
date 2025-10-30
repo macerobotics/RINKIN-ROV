@@ -1,6 +1,7 @@
 function setup()
     local ip = "192.168.1.18"
     v = video.new("rtsp://" .. ip .. ":8554/cam", 640, 480)
+    udp = udp_client.new("127.0.0.1", 1234)
 end
 
 function loop()
@@ -12,6 +13,8 @@ function loop()
     ImGui.End("Video")
     if ImGui.Begin("Script") then
         if ImGui.Button("Reload") then dofile("lua/main.lua") end
+        if ImGui.Button("send") then udp:send("Hello, World!") end
     end
     ImGui.End()
+    if udp:available() then print(udp:receive()) end
 end
