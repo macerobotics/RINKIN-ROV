@@ -2,6 +2,7 @@
 #include <string>
 #include <errno.h>
 #include <assert.h>
+#include <chrono>
 #ifdef _WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -67,19 +68,24 @@ static bool data_available() {
 
 void lua_udp_callback(lua_State *L) {
     assert(udp_table_ref != LUA_NOREF);
-    if(!data_available()) return;
-    lua_rawgeti(L, LUA_REGISTRYINDEX, udp_table_ref);
-    assert(lua_type(L, -1) == LUA_TTABLE);
-    lua_getfield(L, -1, "on_receive");
-    if(lua_type(L, -1) == LUA_TFUNCTION) {
-        char buffer[1500];
-        socklen_t in_addr_size = sizeof(SOCKADDR_IN);
-        ssize_t bytes = recvfrom(sock, buffer, sizeof(buffer), 0, (SOCKADDR*)&in_addr, &in_addr_size);
-        if(bytes > 0) {
-            lua_pushlstring(L, buffer, bytes);
-            int ret = lua_pcall(L, 1, 0, 0);
-            if(ret != LUA_OK) ERROR("%s", lua_tostring(L, -1));
+    auto start = std::chrono::steady_clock::now();
+    while(data_available()) {
+        lua_rawgeti(L, LUA_REGISTRYINDEX, udp_table_ref);
+        assert(lua_type(L, -1) == LUA_TTABLE);
+        lua_getfield(L, -1, "on_receive");
+        if(lua_type(L, -1) == LUA_TFUNCTION) {
+            char buffer[1500];
+            socklen_t in_addr_size = sizeof(SOCKADDR_IN);
+            ssize_t bytes = recvfrom(sock, buffer, sizeof(buffer), 0, (SOCKADDR*)&in_addr, &in_addr_size);
+            if(bytes > 0) {
+                lua_pushlstring(L, buffer, bytes);
+                int ret = lua_pcall(L, 1, 0, 0);
+                if(ret != LUA_OK) ERROR("%s", lua_tostring(L, -1));
+            }
         }
+        auto end = std::chrono::steady_clock::now();
+        if(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() >= 1000)
+            break;
     }
     lua_settop(L, 0);
 }
