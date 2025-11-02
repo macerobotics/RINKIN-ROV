@@ -8,6 +8,13 @@
         puts("");                               \
     } while(0)
 
+#define ERROR(...)                                      \
+    do {                                                \
+        fprintf(stderr, "%s:%d: ", __FILE__, __LINE__); \
+        fprintf(stderr, __VA_ARGS__);                   \
+        fprintf(stderr, "\n");                          \
+    } while(0)
+
 #define FATAL(...)                                      \
     do {                                                \
         fprintf(stderr, "%s:%d: ", __FILE__, __LINE__); \

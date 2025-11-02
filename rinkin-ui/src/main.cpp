@@ -8,6 +8,7 @@
 #include <rlImGui.h>
 #include <lua.hpp>
 #include "lua_bindings/lua_bindings.h"
+#include "lua_bindings/lua_udp.h"
 #include "config.h"
 #include "ui.h"
 #include "util.h"
@@ -81,6 +82,7 @@ int main(int argc, char* argv[]) {
 	lua_simple_fcall(L, "setup");
 
 	while (!WindowShouldClose()) {
+		lua_udp_callback(L);
 		float motor = GetGamepadAxisMovement(0, 3) * -1;
 		static float last_motor = 0;
 		if(motor != last_motor) {
