@@ -10,3 +10,6 @@
 [submodule "rinkin-ui/lib/mosquitto"]
 	path = rinkin-ui/lib/mosquitto
 	url = https://github.com/eclipse-mosquitto/mosquitto
+[submodule "rinkin-ui/lib/implot"]
+	path = rinkin-ui/lib/implot
+	url = https://github.com/epezent/implot

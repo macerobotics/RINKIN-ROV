@@ -6,6 +6,7 @@
 #include <rlights.h>
 #include <imgui.h>
 #include <rlImGui.h>
+#include <implot.h>
 #include <lua.hpp>
 #include "lua_bindings/lua_bindings.h"
 #include "lua_bindings/lua_udp.h"
@@ -51,6 +52,7 @@ int main(int argc, char* argv[]) {
 	InitWindow(screenWidth, screenHeight, "Rinkin");
 	SetTargetFPS(60);
 	rlImGuiSetup(true);
+	ImPlot::CreateContext();
 
 	Camera camera = { 0 };
     camera.position = (Vector3){ 0.0f, 100.0f, -1000.0f };// Camera position perspective
@@ -144,6 +146,20 @@ int main(int argc, char* argv[]) {
 			}
 			ImGui::End();
 
+			float x_data[1000];
+			float y_data[1000];
+			for(int i = 0; i < 1000; i++) {
+				x_data[i] = i;
+				y_data[i] = sinf(2 * M_PI * i / 100);
+			}
+			if(ImGui::Begin("ImPlot")) {
+				if(ImPlot::BeginPlot("test")) {
+					ImPlot::PlotLine("Test", x_data, y_data, 1000);
+					ImPlot::EndPlot();
+				}
+			}
+			ImGui::End();
+
 
 			ImGui::ShowDemoWindow();
 
@@ -155,6 +171,7 @@ int main(int argc, char* argv[]) {
 
 	UnloadShader(shader);
 	UnloadModel(model);
+	ImPlot::DestroyContext();
     rlImGuiShutdown();
 	CloseWindow();
 	lua_close(L);

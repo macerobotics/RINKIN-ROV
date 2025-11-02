@@ -2,6 +2,7 @@ EXE = rinkin
 IMGUI_DIR = lib/imgui
 RAYLIB_DIR = lib/raylib/src
 RLIMGUI_DIR = lib/rlImGui
+IMPLOT_DIR = lib/implot
 LUA_DIR = lib/lua-5.4.8/src
 FFMPEG_DIR = lib/ffmpeg-8.0
 FFMPEG_CONFIGURE = $(FFMPEG_DIR)/config.h
@@ -43,12 +44,13 @@ STATIC_LIBS = $(LIBRAYLIB) $(LIBLUA) $(LIBFFMPEG)
 #FFMPEG_LDFLAGS = -L$(FFMPEG_DIR)/libavformat -L$(FFMPEG_DIR)/libavcodec -L$(FFMPEG_DIR)/libswscale/ -L$(FFMPEG_DIR)/libavutil/ -lavformat -lavcodec -lavutil -lswscale
 #FFMPEG_LDFLAGS = -lavformat -lavcodec -lamake fullvutil -lswscale
 
-INCLUDE_DIRS = -I$(IMGUI_DIR) -Ilib/rlImGui -I$(RAYLIB_DIR) -I$(RAYLIB_DIR)/../examples/shaders -I$(LUA_DIR) -I$(FFMPEG_DIR)
+INCLUDE_DIRS = -I$(IMGUI_DIR) -Ilib/rlImGui -I$(RAYLIB_DIR) -I$(RAYLIB_DIR)/../examples/shaders -I$(LUA_DIR) -I$(FFMPEG_DIR) -I$(IMPLOT_DIR)
 CXXFLAGS = -std=c++11 -pedantic -Wall -MMD -MP $(INCLUDE_DIRS) -g
 LDFLAGS = $(FFMPEG_LDFLAGS) -lpthread -lz
 SRCS = $(shell find src -name *.cpp)
 SRCS += $(IMGUI_DIR)/imgui.cpp $(IMGUI_DIR)/imgui_demo.cpp $(IMGUI_DIR)/imgui_draw.cpp $(IMGUI_DIR)/imgui_tables.cpp $(IMGUI_DIR)/imgui_widgets.cpp
 SRCS += $(RLIMGUI_DIR)/rlImGui.cpp
+SRCS += $(IMPLOT_DIR)/implot.cpp $(IMPLOT_DIR)/implot_items.cpp
 OBJS = $(SRCS:%=build/%.o)
 DEPS = $(OBJS:.o=.d)
 
