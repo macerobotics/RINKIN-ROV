@@ -35,6 +35,11 @@ static int lua_imgui_slider_int(lua_State *L) {
     return 2;
 }
 
+static int lua_imgui_sameline(lua_State *L) {
+    ImGui::SameLine();
+    return 0;
+}
+
 int lua_open_imgui(lua_State *L) {
     const struct luaL_Reg ImGuiLib[] = {
         {"Begin", lua_imgui_begin},
@@ -42,6 +47,7 @@ int lua_open_imgui(lua_State *L) {
         {"Text", lua_imgui_text},
         {"Button", lua_imgui_button},
         {"SliderInt", lua_imgui_slider_int},
+        {"SameLine", lua_imgui_sameline},
         {nullptr, nullptr},
     };
     luaL_newlib(L, ImGuiLib);

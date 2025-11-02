@@ -9,6 +9,7 @@ function loop()
     if ImGui.Begin("Video") then
         v:display()
         if ImGui.Button("Start") then v:start() end
+        ImGui.SameLine()
         if ImGui.Button("Stop") then v:stop() end
     end
     ImGui.End("Video")
