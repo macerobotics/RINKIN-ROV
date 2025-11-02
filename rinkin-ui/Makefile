@@ -2,7 +2,6 @@ EXE = rinkin
 IMGUI_DIR = lib/imgui
 RAYLIB_DIR = lib/raylib/src
 RLIMGUI_DIR = lib/rlImGui
-MOSQUITTO_DIR = lib/mosquitto
 LUA_DIR = lib/lua-5.4.8/src
 FFMPEG_DIR = lib/ffmpeg-8.0
 FFMPEG_CONFIGURE = $(FFMPEG_DIR)/config.h
@@ -37,17 +36,16 @@ FFMPEG_CONFIGURE_FLAGS = \
 	$(FFMPEG_CROSS_FLAGS)
 
 LIBRAYLIB = $(RAYLIB_DIR)/libraylib.a
-#LIBMOSQUITTO = $(MOSQUITTO_DIR)/lib/libmosquitto.a
 LIBLUA = $(LUA_DIR)/liblua.a
 LIBFFMPEG = $(FFMPEG_DIR)/libavformat/libavformat.a $(FFMPEG_DIR)/libavcodec/libavcodec.a $(FFMPEG_DIR)/libswscale/libswscale.a $(FFMPEG_DIR)/libavutil/libavutil.a 
-STATIC_LIBS = $(LIBRAYLIB) $(LIBMOSQUITTO) $(LIBLUA) $(LIBFFMPEG)
+STATIC_LIBS = $(LIBRAYLIB) $(LIBLUA) $(LIBFFMPEG)
 
 #FFMPEG_LDFLAGS = -L$(FFMPEG_DIR)/libavformat -L$(FFMPEG_DIR)/libavcodec -L$(FFMPEG_DIR)/libswscale/ -L$(FFMPEG_DIR)/libavutil/ -lavformat -lavcodec -lavutil -lswscale
-#FFMPEG_LDFLAGS = -lavformat -lavcodec -lavutil -lswscale
+#FFMPEG_LDFLAGS = -lavformat -lavcodec -lamake fullvutil -lswscale
 
-INCLUDE_DIRS = -I$(IMGUI_DIR) -Ilib/rlImGui -I$(RAYLIB_DIR) -I$(RAYLIB_DIR)/../examples/shaders -I$(MOSQUITTO_DIR)/include -I$(LUA_DIR) -I$(FFMPEG_DIR)
+INCLUDE_DIRS = -I$(IMGUI_DIR) -Ilib/rlImGui -I$(RAYLIB_DIR) -I$(RAYLIB_DIR)/../examples/shaders -I$(LUA_DIR) -I$(FFMPEG_DIR)
 CXXFLAGS = -std=c++11 -pedantic -Wall -MMD -MP $(INCLUDE_DIRS) -g
-LDFLAGS = $(FFMPEG_LDFLAGS) -lpthread -L$(MOSQUITTO_DIR) -lmosquitto -lz
+LDFLAGS = $(FFMPEG_LDFLAGS) -lpthread -lz
 SRCS = $(shell find src -name *.cpp)
 SRCS += $(IMGUI_DIR)/imgui.cpp $(IMGUI_DIR)/imgui_demo.cpp $(IMGUI_DIR)/imgui_draw.cpp $(IMGUI_DIR)/imgui_tables.cpp $(IMGUI_DIR)/imgui_widgets.cpp
 SRCS += $(RLIMGUI_DIR)/rlImGui.cpp
@@ -67,9 +65,6 @@ build/%.cpp.o: %.cpp
 $(LIBRAYLIB):
 	$(MAKE) -C $(RAYLIB_DIR) $(RAYLIB_PLATFORM_OS)
 
-$(LIBMOSQUITTO):
-	$(MAKE) -C $(MOSQUITTO_DIR)/lib WITH_STATIC_LIBRARIES=no WITH_SHARED_LIBRARIES=yes WITH_TLS=no $(MOSQUITTO_OPTIONS)
-
 $(LIBLUA):
 	$(MAKE) -C $(LUA_DIR) liblua.a
 
@@ -88,7 +83,7 @@ WINDOWS_FFMPEG_CONFIGURE_FLAGS = \
 	--cross-prefix=x86_64-w64-mingw32-
 
 windows: 
-	$(MAKE) CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ LDFLAGS="$(LDFLAGS) -lws2_32 -lgdi32 -lopengl32 -lwinmm -lncrypt -lsecur32 -lcrypt32" FFMPEG_CROSS_FLAGS="$(WINDOWS_FFMPEG_CONFIGURE_FLAGS)" RAYLIB_PLATFORM_OS="PLATFORM_OS=WINDOWS" MOSQUITTO_OPTIONS="WITH_UNIX_SOCKETS=no WITH_DAEMON=no"
+	$(MAKE) CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ LDFLAGS="$(LDFLAGS) -lws2_32 -lgdi32 -lopengl32 -lwinmm -lncrypt -lsecur32 -lcrypt32" FFMPEG_CROSS_FLAGS="$(WINDOWS_FFMPEG_CONFIGURE_FLAGS)" RAYLIB_PLATFORM_OS="PLATFORM_OS=WINDOWS"
 
 .PHONY: run clean fullclean lsp
 
@@ -98,9 +93,8 @@ run: bin/$(EXE)
 clean:
 	rm -rf bin build
 
-fullclean:
+fullclean: clean
 	make -C $(RAYLIB_DIR) clean
-	make -C $(MOSQUITTO_DIR) clean
 	make -C $(LUA_DIR) clean
 	make -C $(FFMPEG_DIR) distclean
 	rm -f .vscode/compile_commands.json
