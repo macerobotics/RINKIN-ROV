@@ -15,6 +15,7 @@ function loop()
     if ImGui.Begin("Script") then
         if ImGui.Button("Reload") then dofile("lua/main.lua") end
         if ImGui.Button("send") then udp.send("Hello, World!") end
+        ImGui.Text(tostring(gamepad.get_axis_count(0)))
     end
     ImGui.End()
 end
