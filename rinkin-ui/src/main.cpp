@@ -20,10 +20,7 @@
 
 #define GLSL_VERSION            330
 
-#define LAST(x) x[(x##_offset - 1+ IM_ARRAYSIZE(x)) % IM_ARRAYSIZE(x)]
-static float heading[256] = {0};
-static int heading_offset = 0;
-float pitch = 0.0f, roll = 0.0f;
+float heading = 0.0f, pitch = 0.0f, roll = 0.0f;
 
 void lua_simple_fcall(lua_State *L, const char *fname) {
 	lua_getglobal(L, fname);
@@ -99,7 +96,7 @@ int main(int argc, char* argv[]) {
 		float cameraPos[3] = { camera.position.x, camera.position.y, camera.position.z };
         SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW], cameraPos, SHADER_UNIFORM_VEC3);
 
-		model.transform = MatrixRotateXYZ((Vector3){DEG2RAD * pitch, DEG2RAD * (LAST(heading) - 90.0f), DEG2RAD * roll});
+		model.transform = MatrixRotateXYZ((Vector3){pitch, heading, roll});
 		BeginDrawing();
 		{
 			ClearBackground(DARKGRAY);
@@ -123,11 +120,6 @@ int main(int argc, char* argv[]) {
 			lua_simple_fcall(L, "loop");
 
 			ui();
-
-			if(ImGui::Begin("IMU")) {
-				ImGui::PlotLines("heading", heading, IM_ARRAYSIZE(heading), heading_offset, nullptr, 0.0f, 360.0f, ImVec2(0, 80.0f));
-			}
-			ImGui::End();
 
 			//if(connection_status != CONNECTED) {
 			//	if(ImGui::Begin("MQTT")) {

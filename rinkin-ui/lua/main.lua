@@ -1,8 +1,19 @@
 function setup()
     local ip = "192.168.1.18"
     v = video.new("rtsp://" .. ip .. ":8554/cam", 640, 480)
-    udp.init("127.0.0.1", 1234)
-    udp.on_receive = function(msg) print("udp: " .. msg) end
+    udp.init(ip, 1234)
+    udp.on_receive = function(msg)
+        print("udp: " .. msg)
+        local command, param = msg:match("^#(%a+),([^!]+)!$")
+        print(command, param)
+        if command == "heading" then
+            model.set_heading(tonumber(param))
+        elseif command == "pitch" then
+            model.set_pitch(tonumber(param))
+        elseif command == "roll" then
+            model.set_roll(tonumber(param))
+        end
+    end
 end
 
 function loop()
