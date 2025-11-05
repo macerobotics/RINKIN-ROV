@@ -43,6 +43,7 @@ static Video *checkvideo(lua_State *L) {
 
 static void video_stop(Video *v) {
     if(v->is_running.exchange(false)) {
+        if(v->thread->joinable()) v->thread->join();
         av_frame_free(&v->frame);
         av_frame_free(&v->rgb_frame);
         av_packet_unref(v->packet);
