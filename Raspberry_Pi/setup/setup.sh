@@ -9,12 +9,7 @@ sudo raspi-config nonint do_serial_hw 0
 sudo raspi-config nonint do_serial_cons 1
 
 sudo apt update
-sudo apt install mosquitto python3-pip -y
-
-# Installation de Mosquitto (serveur MQTT)
-cd /home/rinkin/setup 
-sudo cp -u mosquitto.conf /etc/mosquitto/conf.d/
-sudo systemctl restart mosquitto
+sudo apt install python3-pip -y
 
 # Installation de Mediamtx (caméra)
 cd /home/rinkin/setup/mediamtx
