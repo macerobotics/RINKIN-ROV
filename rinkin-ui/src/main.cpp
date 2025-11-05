@@ -138,21 +138,6 @@ int main(int argc, char* argv[]) {
 			}
 			ImGui::End();
 
-			float x_data[1000];
-			float y_data[1000];
-			for(int i = 0; i < 1000; i++) {
-				x_data[i] = i;
-				y_data[i] = sinf(2 * M_PI * i / 100);
-			}
-			if(ImGui::Begin("ImPlot")) {
-				if(ImPlot::BeginPlot("test")) {
-					ImPlot::PlotLine("Test", x_data, y_data, 1000);
-					ImPlot::EndPlot();
-				}
-			}
-			ImGui::End();
-
-
 			ImGui::ShowDemoWindow();
 
 

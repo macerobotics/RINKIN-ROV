@@ -4,6 +4,7 @@
 #include "lua_udp.h"
 #include "lua_gamepad.h"
 #include "lua_model.h"
+#include "lua_plot.h"
 
 void lua_register_bindings(struct lua_State *L) {
     luaL_requiref(L, "video", lua_open_video, 1);
@@ -15,5 +16,7 @@ void lua_register_bindings(struct lua_State *L) {
     luaL_requiref(L, "gamepad", lua_open_gamepad, 1);
     lua_pop(L, 1);
     luaL_requiref(L, "model", lua_open_model, 1);
+    lua_pop(L, 1);
+    luaL_requiref(L, "plot", lua_open_plot, 1);
     lua_pop(L, 1);
 }

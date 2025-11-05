@@ -1,0 +1,1 @@
+int lua_open_plot(struct lua_State *L);
