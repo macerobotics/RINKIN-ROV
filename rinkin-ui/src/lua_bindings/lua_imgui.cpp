@@ -38,7 +38,7 @@ static int lua_imgui_end_group(lua_State *L) {
     return 0;
 }
 
-static int lua_imgui_set_newt_window_pos(lua_State *L) {
+static int lua_imgui_set_next_window_pos(lua_State *L) {
     int x = luaL_checkinteger(L, 1);
     int y = luaL_checkinteger(L, 2);
     ImGui::SetNextWindowPos(ImVec2(x, y));
@@ -87,7 +87,7 @@ int lua_open_imgui(lua_State *L) {
         {"EndChild", lua_imgui_end_child},
         {"BeginGroup", lua_imgui_begin_group},
         {"EndGroup", lua_imgui_end_group},
-        {"SetNextWindowPos", lua_imgui_set_newt_window_pos},
+        {"SetNextWindowPos", lua_imgui_set_next_window_pos},
         {"Text", lua_imgui_text},
         {"Button", lua_imgui_button},
         {"SliderInt", lua_imgui_slider_int},
