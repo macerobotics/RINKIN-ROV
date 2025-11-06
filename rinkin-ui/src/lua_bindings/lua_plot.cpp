@@ -40,8 +40,10 @@ static int lua_plot_new(lua_State *L) {
 }
 
 static int lua_plot_begin(lua_State *L) {
-    const char *title_id = luaL_checkstring(L, 1); 
-    lua_pushboolean(L, ImPlot::BeginPlot(title_id));
+    const char *title_id = luaL_checkstring(L, 1);
+    int vx = luaL_optinteger(L, 2, -1);
+    int vy = luaL_optinteger(L, 3, 0);
+    lua_pushboolean(L, ImPlot::BeginPlot(title_id, ImVec2(vx, vy)));
     return 1;
 }
 

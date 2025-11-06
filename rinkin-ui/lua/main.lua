@@ -53,7 +53,7 @@ function loop()
         ImGui.EndChild()
 
 
-        if plot.Begin("IMU") then
+        if plot.Begin("IMU", 800, 600) then
             plot.x_axis_limits(0, 1000, "always")
             plot.y_axis_limits(0, 360)
             heading:display()
