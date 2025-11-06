@@ -50,7 +50,9 @@ int main(int argc, char* argv[]) {
 	InitWindow(screenWidth, screenHeight, "Rinkin");
 	SetTargetFPS(60);
 	rlImGuiSetup(true);
+	ImGui::StyleColorsLight();
 	ImPlot::CreateContext();
+	
 
 	Camera camera = { 0 };
     camera.position = (Vector3){ 0.0f, 100.0f, -1000.0f };// Camera position perspective
