@@ -121,16 +121,6 @@ int main(int argc, char* argv[]) {
 
 			ui();
 
-			//if(connection_status != CONNECTED) {
-			//	if(ImGui::Begin("MQTT")) {
-			//		if(connection_status == CONNECTING)
-			//			ImGui::ProgressBar(-1.0f * (float)ImGui::GetTime(), ImVec2(0.0f, 0.0f), "Connexion en cours...");
-			//		else
-			//			ImGui::Text("disconnected");
-			//	}
-			//	ImGui::End();
-			//}
-
 			if(ImGui::Begin("Moteurs")) {
 				if(ImGui::SliderFloat("Moteur 1", &motor, -1, 1)) {
 
