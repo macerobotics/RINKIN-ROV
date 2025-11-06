@@ -54,7 +54,7 @@ int main(int argc, char* argv[]) {
 	Camera camera = { 0 };
     camera.position = (Vector3){ 0.0f, 100.0f, -1000.0f };// Camera position perspective
     camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };      // Camera looking at point
-    camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          // Camera up vector (rotation towards target)
+    camera.up = (Vector3){ 0.0f, -1.0f, 0.0f };          // Camera up vector (rotation towards target)
     camera.fovy = 30.0f;                                // Camera field-of-view Y
     camera.projection = CAMERA_PERSPECTIVE;             // Camera type
 
@@ -67,6 +67,8 @@ int main(int argc, char* argv[]) {
     light = CreateLight(LIGHT_POINT, (Vector3){ 0, 500, 0 }, Vector3Zero(), WHITE, shader);
 
 	Model model = LoadModel("model.obj");
+
+	RenderTexture2D model_texture = LoadRenderTexture(640, 480);
 
 	for (int i = 0; i < model.materialCount; i++) {
     	model.materials[i].shader = shader;
@@ -97,12 +99,10 @@ int main(int argc, char* argv[]) {
         SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW], cameraPos, SHADER_UNIFORM_VEC3);
 
 		model.transform = MatrixRotateXYZ((Vector3){pitch, heading, roll});
-		BeginDrawing();
+
+		BeginTextureMode(model_texture);
 		{
 			ClearBackground(DARKGRAY);
-
-			DrawFPS(10, 10);
-
 			BeginMode3D(camera);
 			{
 				BeginShaderMode(shader);
@@ -114,6 +114,14 @@ int main(int argc, char* argv[]) {
 				DrawSphereEx(light.position, 10.0f, 8, 8, light.color);
 			}
 			EndMode3D();
+		}
+		EndTextureMode();
+
+		BeginDrawing();
+		{
+			ClearBackground(DARKGRAY);
+
+			DrawFPS(10, 10);
 
 			rlImGuiBegin();
 
@@ -125,6 +133,11 @@ int main(int argc, char* argv[]) {
 				if(ImGui::SliderFloat("Moteur 1", &motor, -1, 1)) {
 
 				}
+			}
+			ImGui::End();
+
+			if(ImGui::Begin("Modèle 3D")) {
+				rlImGuiImage((const Texture*)&model_texture.texture);
 			}
 			ImGui::End();
 
