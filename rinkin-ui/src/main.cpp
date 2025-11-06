@@ -21,6 +21,7 @@
 #define GLSL_VERSION            330
 
 float heading = 0.0f, pitch = 0.0f, roll = 0.0f;
+RenderTexture2D model_texture;
 
 void lua_simple_fcall(lua_State *L, const char *fname) {
 	lua_getglobal(L, fname);
@@ -68,7 +69,7 @@ int main(int argc, char* argv[]) {
 
 	Model model = LoadModel("model.obj");
 
-	RenderTexture2D model_texture = LoadRenderTexture(640, 480);
+	model_texture = LoadRenderTexture(640, 480);
 
 	for (int i = 0; i < model.materialCount; i++) {
     	model.materials[i].shader = shader;
@@ -136,12 +137,7 @@ int main(int argc, char* argv[]) {
 			}
 			ImGui::End();
 
-			if(ImGui::Begin("Modèle 3D")) {
-				rlImGuiImage((const Texture*)&model_texture.texture);
-			}
-			ImGui::End();
-
-			ImGui::ShowDemoWindow();
+			//ImGui::ShowDemoWindow();
 
 
 			rlImGuiEnd();

@@ -1,6 +1,8 @@
+video_resolution = {x = 640, y = 480}
+
 function setup()
     local ip = "192.168.1.18"
-    v = video.new("rtsp://" .. ip .. ":8554/cam", 640, 480)
+    v = video.new("rtsp://" .. ip .. ":8554/cam", video_resolution.x, video_resolution.y)
     udp.init(ip, 1234)
     heading = plot.new("heading", 1000)
     pitch = plot.new("pitch", 1000)
@@ -25,21 +27,32 @@ function setup()
 end
 
 function loop()
-    if ImGui.Begin("Video") then
-        v:display()
-        if ImGui.Button("Démarrer") then v:start() end
+    ImGui.SetNextWindowPos(0, 0)
+    if ImGui.Begin("Rinkin") then
+        ImGui.BeginGroup("Video")
+            ImGui.Text("Vidéo")
+            v:display()
+            if ImGui.Button("Démarrer") then v:start() end
+            ImGui.SameLine()
+            if ImGui.Button("Arrêter") then v:stop() end
+        ImGui.EndGroup()
+        
         ImGui.SameLine()
-        if ImGui.Button("Arrêter") then v:stop() end
-    end
-    ImGui.End("Video")
-    if ImGui.Begin("Script") then
-        if ImGui.Button("Reload") then dofile("lua/main.lua") end
-        if ImGui.Button("send") then udp.send("Hello, World!") end
-        ImGui.Text(tostring(gamepad.get_axis_count(0)))
-    end
-    ImGui.End()
+        ImGui.BeginGroup()
+            ImGui.Text("Modèle 3D")
+            model.display()
+        ImGui.EndGroup()
 
-    if ImGui.Begin("IMU") then
+        ImGui.SeparatorText("Script")
+
+        if ImGui.BeginChild("Script", 100, 100) then
+            if ImGui.Button("Reload") then dofile("lua/main.lua") end
+            if ImGui.Button("send") then udp.send("Hello, World!") end
+            ImGui.Text(tostring(gamepad.get_axis_count(0)))
+        end
+        ImGui.EndChild()
+
+
         if plot.Begin("IMU") then
             plot.x_axis_limits(0, 1000, "always")
             plot.y_axis_limits(0, 360)
@@ -48,6 +61,7 @@ function loop()
             roll:display()
             plot.End()
         end
+        
     end
     ImGui.End()
 end
