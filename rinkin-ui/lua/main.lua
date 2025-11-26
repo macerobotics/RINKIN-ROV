@@ -27,6 +27,15 @@ function setup()
 end
 
 function loop()
+    --[[
+    if gamepad.is_button_pressed(0, 11) then
+        udp.send("#MOT 0.1\n")
+    elseif gamepad.is_button_released(0, 11) then
+        udp.send("#MOT 0\n")
+    end
+    --]]
+    udp.send("#MOT " .. tostring(-1 * gamepad.get_axis_movement(0, 3)) .. "\n")
+
     ImGui.SetNextWindowPos(0, 0)
     ImGui.SetNextWindowSize(ImGui.GetViewportSize())
     if ImGui.Begin("Rinkin") then
@@ -47,14 +56,20 @@ function loop()
         ImGui.SeparatorText("Script")
 
         if ImGui.BeginChild("Script", 100, 100) then
-            if ImGui.Button("Reload") then dofile("lua/main.lua") end
-            if ImGui.Button("send") then udp.send("Hello, World!") end
+            if ImGui.Button("Recharger") then dofile("lua/main.lua") end
+            if ImGui.Button("Envoyer") then udp.send("Hello, World!") end
             ImGui.Text(tostring(gamepad.get_axis_count(0)))
         end
         ImGui.EndChild()
 
+        ImGui.SeparatorText("Gamepad")
 
-        if plot.Begin("IMU", 800, 600) then
+        if ImGui.BeginChild("foo") then
+            ImGui.Text(tostring(gamepad.is_button_down(0, 11)))
+        end
+        ImGui.EndChild()
+
+        if plot.Begin("IMU", 640, 400) then
             plot.x_axis_limits(0, 1000, "always")
             plot.y_axis_limits(0, 360)
             heading:display()
