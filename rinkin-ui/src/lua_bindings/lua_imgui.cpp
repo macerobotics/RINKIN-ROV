@@ -45,6 +45,20 @@ static int lua_imgui_set_next_window_pos(lua_State *L) {
     return 0;
 }
 
+static int lua_imgui_set_next_window_size(lua_State *L) {
+    int x = luaL_checkinteger(L, 1);
+    int y = luaL_checkinteger(L, 2);
+    ImGui::SetNextWindowSize(ImVec2(x, y));
+    return 0;
+}
+
+static int lua_imgui_get_viewport_size(lua_State *L) {
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
+    lua_pushinteger(L, viewport->Size.x);
+    lua_pushinteger(L, viewport->Size.y);
+    return 2;
+}
+
 static int lua_imgui_text(lua_State *L) {
     const char *text = luaL_checkstring(L, 1);
     ImGui::Text("%s", text);
@@ -88,6 +102,8 @@ int lua_open_imgui(lua_State *L) {
         {"BeginGroup", lua_imgui_begin_group},
         {"EndGroup", lua_imgui_end_group},
         {"SetNextWindowPos", lua_imgui_set_next_window_pos},
+        {"SetNextWindowSize", lua_imgui_set_next_window_size},
+        {"GetViewportSize", lua_imgui_get_viewport_size},
         {"Text", lua_imgui_text},
         {"Button", lua_imgui_button},
         {"SliderInt", lua_imgui_slider_int},
