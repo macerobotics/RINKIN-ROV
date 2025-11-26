@@ -28,6 +28,7 @@ end
 
 function loop()
     ImGui.SetNextWindowPos(0, 0)
+    ImGui.SetNextWindowSize(ImGui.GetViewportSize())
     if ImGui.Begin("Rinkin") then
         ImGui.BeginGroup("Video")
             ImGui.Text("Vidéo")
