@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euxo pipefail
 
-IP=192.168.10.90
+IP=192.168.0.1
 
 if [ ! -f setup/mediamtx/mediamtx ]; then
     pushd setup/mediamtx
