@@ -1,27 +1,34 @@
 #!/usr/bin/python3
 import asyncio
+import socket
 import serial
 from smbus2 import SMBus
-from paho.mqtt import client as mqtt_client
-from paho.mqtt.enums import CallbackAPIVersion
-#import serial
 from cmps12 import CMPS12
 
-async def imu_loop(client):
+udp_port = 1234
+addr = None
+
+async def imu_loop(sock):
     imu = CMPS12(SMBus(1))
+    loop = asyncio.get_running_loop()
     while True:
-        imu.update()
-        print(f"heading = {imu.heading()}\tpich={imu.pitch()}\troll={imu.roll()}")
-        client.publish("/imu/heading", imu.heading())
-        client.publish("/imu/pitch", imu.pitch())
-        client.publish("/imu/roll", imu.roll())
-        
+        if addr is not None:
+            imu.update()
+            print(f"heading = {imu.heading()}\tpich={imu.pitch()}\troll={imu.roll()}")
+            await loop.sock_sendto(sock, f"#heading,{imu.heading()}!".encode("utf-8"), addr)
+            await loop.sock_sendto(sock, f"#pitch,{imu.pitch()}!".encode("utf-8"), addr)
+            await loop.sock_sendto(sock, f"#roll,{imu.roll()}!".encode("utf-8"), addr)
         await asyncio.sleep(0.1)
 
-def on_mqtt_connect(client, userdata, flags, rc, properties):
-    print(f"on_mqtt_connect, rc={rc}")
-    client.subscribe("/motor")
+async def udp_loop(sock, ser):
+    global addr
+    loop = asyncio.get_running_loop()
+    while True:
+        data, addr = await loop.sock_recvfrom(sock, 1500)
+        print(f"received: {data} from {addr}")
+        loop.call_soon(ser.write, data)
 
+"""
 def on_message(client, userdata, msg):
     print(f"topic: {msg.topic}, payload: {msg.payload.decode()}")
     if msg.topic == "/motor":
@@ -30,24 +37,28 @@ def on_message(client, userdata, msg):
         cmd = f"#MOT {speed}\n".encode('utf8')
         print(f"> {repr(cmd)}")
         ser.write(cmd)
-
-
-ser = serial.Serial("/dev/ttyS0", 921600)
-
-client = mqtt_client.Client(CallbackAPIVersion(2), client_id="raspberry-pi")
-client.on_connect = on_mqtt_connect
-client.on_message = on_message
-client.connect("localhost", 1883)
-
-client.loop_start()
+"""
 
 async def main():
-    imu_task = asyncio.create_task(imu_loop(client))
+    ser = serial.Serial("/dev/ttyS0", 921600)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind(("0.0.0.0", udp_port))
+    sock.setblocking(False)
+    imu_task = asyncio.create_task(imu_loop(sock))
+    udp_task = asyncio.create_task(udp_loop(sock, ser))
     await imu_task
+    await udp_task
+    ser.close()
 
 asyncio.run(main())
 
-ser.close()
+
+
+
+    
+
+
+
 
 """
 
