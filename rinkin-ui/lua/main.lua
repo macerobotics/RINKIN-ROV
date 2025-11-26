@@ -1,7 +1,7 @@
 video_resolution = {x = 640, y = 480}
 
 function setup()
-    local ip = "192.168.1.18"
+    local ip = "192.168.10.90"
     v = video.new("rtsp://" .. ip .. ":8554/cam", video_resolution.x, video_resolution.y)
     udp.init(ip, 1234)
     heading = plot.new("heading", 1000)
