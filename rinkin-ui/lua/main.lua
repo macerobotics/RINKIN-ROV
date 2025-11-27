@@ -1,4 +1,5 @@
 video_resolution = {x = 640, y = 480}
+speed = 0
 
 function setup()
     local ip = "192.168.0.1"
@@ -7,6 +8,7 @@ function setup()
     heading = plot.new("heading", 1000)
     pitch = plot.new("pitch", 1000)
     roll = plot.new("roll", 1000)
+    speed_plot = plot.new("vitesse", 1000)
     udp.on_receive = function(msg)
         print("udp: " .. msg)
         local command, param = msg:match("^#(%a+),([^!]+)!$")
@@ -34,7 +36,16 @@ function loop()
         udp.send("#MOT 0\n")
     end
     --]]
-    udp.send("#MOT " .. tostring(-1 * gamepad.get_axis_movement(0, 3)) .. "\n")
+
+    local target_speed = -1 * gamepad.get_axis_movement(0, 3)
+    if target_speed > speed then
+        speed = target_speed
+    else
+        speed = math.max(speed - 0.01, target_speed)
+    end
+    speed_plot:append(speed)
+
+    udp.send("#MOT " .. tostring(speed) .. "\n")
 
     ImGui.SetNextWindowPos(0, 0)
     ImGui.SetNextWindowSize(ImGui.GetViewportSize())
@@ -54,6 +65,12 @@ function loop()
         ImGui.EndGroup()
 
         ImGui.SeparatorText("Script")
+        if plot.Begin("Vitesse", 320, 240) then
+            plot.x_axis_limits(0, 1000, "always")
+            plot.y_axis_limits(0, 1)
+            speed_plot:display()
+            plot.End()
+        end
 
         if ImGui.BeginChild("Script", 100, 100) then
             if ImGui.Button("Recharger") then dofile("lua/main.lua") end
