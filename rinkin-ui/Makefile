@@ -46,7 +46,12 @@ STATIC_LIBS = $(LIBRAYLIB) $(LIBLUA) $(LIBFFMPEG)
 
 INCLUDE_DIRS = -I$(IMGUI_DIR) -Ilib/rlImGui -I$(RAYLIB_DIR) -I$(RAYLIB_DIR)/../examples/shaders -I$(LUA_DIR) -I$(FFMPEG_DIR) -I$(IMPLOT_DIR)
 CXXFLAGS = -std=c++11 -pedantic -Wall -MMD -MP $(INCLUDE_DIRS) -g
-LDFLAGS = $(FFMPEG_LDFLAGS) -lpthread -lz
+LDFLAGS = $(FFMPEG_LDFLAGS) -lpthread
+ifeq ($(TARGET),windows)
+	LDFLAGS += -lws2_32 -lgdi32 -lopengl32 -lwinmm -lncrypt -lsecur32 -lcrypt32
+else
+	LDFLAGS += -lz
+endif
 SRCS = $(shell find src -name *.cpp)
 SRCS += $(IMGUI_DIR)/imgui.cpp $(IMGUI_DIR)/imgui_demo.cpp $(IMGUI_DIR)/imgui_draw.cpp $(IMGUI_DIR)/imgui_tables.cpp $(IMGUI_DIR)/imgui_widgets.cpp
 SRCS += $(RLIMGUI_DIR)/rlImGui.cpp
@@ -85,7 +90,7 @@ WINDOWS_FFMPEG_CONFIGURE_FLAGS = \
 	--cross-prefix=x86_64-w64-mingw32-
 
 windows: 
-	$(MAKE) CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ LDFLAGS="$(LDFLAGS) -lws2_32 -lgdi32 -lopengl32 -lwinmm -lncrypt -lsecur32 -lcrypt32" FFMPEG_CROSS_FLAGS="$(WINDOWS_FFMPEG_CONFIGURE_FLAGS)" RAYLIB_PLATFORM_OS="PLATFORM_OS=WINDOWS"
+	$(MAKE) TARGET=windows CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ FFMPEG_CROSS_FLAGS="$(WINDOWS_FFMPEG_CONFIGURE_FLAGS)" RAYLIB_PLATFORM_OS="PLATFORM_OS=WINDOWS"
 
 .PHONY: run clean fullclean lsp
 
