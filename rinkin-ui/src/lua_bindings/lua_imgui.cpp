@@ -82,6 +82,16 @@ static int lua_imgui_slider_int(lua_State *L) {
     return 2;
 }
 
+static int lua_imgui_checkbox(lua_State *L) {
+    const char *label = luaL_checkstring(L, 1);
+    luaL_checktype(L, 2, LUA_TBOOLEAN);
+    bool checked = lua_toboolean(L, 2);
+    bool modified = ImGui::Checkbox(label, &checked);
+    lua_pushboolean(L, checked);
+    lua_pushboolean(L, modified);
+    return 2;
+}
+
 static int lua_imgui_sameline(lua_State *L) {
     ImGui::SameLine();
     return 0;
@@ -107,6 +117,7 @@ int lua_open_imgui(lua_State *L) {
         {"Text", lua_imgui_text},
         {"Button", lua_imgui_button},
         {"SliderInt", lua_imgui_slider_int},
+        {"Checkbox", lua_imgui_checkbox},
         {"SameLine", lua_imgui_sameline},
         {"SeparatorText", lua_imgui_separator_text},
         {nullptr, nullptr},
