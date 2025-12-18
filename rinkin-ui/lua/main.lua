@@ -1,5 +1,10 @@
+-- commandes moteurs :
+-- #0m20!   <- moteur 0, vitesse 20
+-- moteur de 0 à 4, vitesse de -20 à 20
+
 video_resolution = {x = 640, y = 480}
 speed = 0
+gamepad_enabled = false
 
 function setup()
     local ip = "192.168.0.1"
@@ -29,23 +34,20 @@ function setup()
 end
 
 function loop()
-    --[[
-    if gamepad.is_button_pressed(0, 11) then
-        udp.send("#MOT 0.1\n")
-    elseif gamepad.is_button_released(0, 11) then
-        udp.send("#MOT 0\n")
+    if gamepad_enabled then
+     speed = round(-20 * gamepad.get_axis_movement(0, 3))
     end
-    --]]
 
-    local target_speed = -1 * gamepad.get_axis_movement(0, 3)
-    if target_speed > speed then
-        speed = target_speed
-    else
-        speed = math.max(speed - 0.01, target_speed)
-    end
     speed_plot:append(speed)
 
-    udp.send("#MOT " .. tostring(speed) .. "\n")
+    cmd = "#0m" .. tostring(math.floor(speed)) .. "!\n"
+    --udp.send(cmd)
+
+    if gamepad.is_button_pressed(0, 11) then
+        udp.send("#LEDB,1!\n")
+    elseif gamepad.is_button_released(0, 11) then
+        udp.send("#LEDB,0!\n")
+    end
 
     ImGui.SetNextWindowPos(0, 0)
     ImGui.SetNextWindowSize(ImGui.GetViewportSize())
@@ -65,16 +67,28 @@ function loop()
         ImGui.EndGroup()
 
         ImGui.SeparatorText("Script")
-        if plot.Begin("Vitesse", 320, 240) then
+        if ImGui.Button("Allumer LED") then
+            udp.send("#LEDB,1!\n")
+        end
+        ImGui.SameLine()
+        if ImGui.Button("Éteindre LED") then
+            udp.send("#LEDB,0!\n")
+        end
+        gamepad_enabled = ImGui.Checkbox("Gamepad activé", gamepad_enabled)
+        local modified
+        speed, modified = ImGui.SliderInt("Vitesse moteur", speed, -20, 20)
+        if modified then
+            udp.send("#0m" .. tostring(speed) .. "!\n")
+        end
+        if plot.Begin("Vitesse moteur##plot", 320, 240) then
             plot.x_axis_limits(0, 1000, "always")
-            plot.y_axis_limits(0, 1)
+            plot.y_axis_limits(-20, 20, "always")
             speed_plot:display()
             plot.End()
         end
 
         if ImGui.BeginChild("Script", 100, 100) then
             if ImGui.Button("Recharger") then dofile("lua/main.lua") end
-            if ImGui.Button("Envoyer") then udp.send("Hello, World!") end
             ImGui.Text(tostring(gamepad.get_axis_count(0)))
         end
         ImGui.EndChild()
@@ -97,4 +111,12 @@ function loop()
         
     end
     ImGui.End()
+end
+
+function round(x)
+    if x >= 0 then
+        return math.floor(x + 0.5)
+    else
+        return math.ceil(x + 0.5)
+    end
 end
