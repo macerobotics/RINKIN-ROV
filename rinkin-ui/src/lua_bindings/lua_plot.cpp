@@ -58,7 +58,7 @@ static int lua_plot_x_axis_limits(lua_State *L) {
     LUA_NUMBER xmin = luaL_checknumber(L, 1);
     LUA_NUMBER xmax = luaL_checknumber(L, 2);
     int i_cond = luaL_checkoption(L, 3, "once", conds);
-    ImPlot::SetupAxesLimits(ImAxis_X1, xmin, xmax, i_cond + 1);
+    ImPlot::SetupAxisLimits(ImAxis_X1, xmin, xmax, i_cond + 1);
     return 0;
 }
 
@@ -66,7 +66,7 @@ static int lua_plot_y_axis_limits(lua_State *L) {
     LUA_NUMBER ymin = luaL_checknumber(L, 1);
     LUA_NUMBER ymax = luaL_checknumber(L, 2);
     int i_cond = luaL_checkoption(L, 3, "once", conds);
-    ImPlot::SetupAxesLimits(ImAxis_Y1, ymin, ymax, i_cond + 1);
+    ImPlot::SetupAxisLimits(ImAxis_Y1, ymin, ymax, i_cond + 1);
     return 0;
 }
 
