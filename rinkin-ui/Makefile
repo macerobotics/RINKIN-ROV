@@ -5,6 +5,7 @@ RLIMGUI_DIR = lib/rlImGui
 IMPLOT_DIR = lib/implot
 LUA_DIR = lib/lua-5.4.8/src
 FFMPEG_DIR = lib/ffmpeg-8.0
+ZLIB_DIR = lib/zlib
 FFMPEG_CONFIGURE = $(FFMPEG_DIR)/config.h
 FFMPEG_CONFIGURE_FLAGS = \
 	--disable-encoders \
@@ -39,19 +40,19 @@ FFMPEG_CONFIGURE_FLAGS = \
 LIBRAYLIB = $(RAYLIB_DIR)/libraylib.a
 LIBLUA = $(LUA_DIR)/liblua.a
 LIBFFMPEG = $(FFMPEG_DIR)/libavformat/libavformat.a $(FFMPEG_DIR)/libavcodec/libavcodec.a $(FFMPEG_DIR)/libswscale/libswscale.a $(FFMPEG_DIR)/libavutil/libavutil.a 
-STATIC_LIBS = $(LIBRAYLIB) $(LIBLUA) $(LIBFFMPEG)
+ZLIB = $(ZLIB_DIR)/libz.a
+STATIC_LIBS = $(LIBRAYLIB) $(LIBLUA) $(LIBFFMPEG) $(ZLIB)
 
 #FFMPEG_LDFLAGS = -L$(FFMPEG_DIR)/libavformat -L$(FFMPEG_DIR)/libavcodec -L$(FFMPEG_DIR)/libswscale/ -L$(FFMPEG_DIR)/libavutil/ -lavformat -lavcodec -lavutil -lswscale
 #FFMPEG_LDFLAGS = -lavformat -lavcodec -lamake fullvutil -lswscale
 
 INCLUDE_DIRS = -I$(IMGUI_DIR) -Ilib/rlImGui -I$(RAYLIB_DIR) -I$(RAYLIB_DIR)/../examples/shaders -I$(LUA_DIR) -I$(FFMPEG_DIR) -I$(IMPLOT_DIR)
-CXXFLAGS = -std=c++11 -pedantic -Wall -MMD -MP $(INCLUDE_DIRS) -g
+CXXFLAGS = -std=c++11 -pedantic -Wall -MMD -MP $(INCLUDE_DIRS) -g -Os
 LDFLAGS = $(FFMPEG_LDFLAGS) -lpthread
 ifeq ($(TARGET),windows)
 	LDFLAGS += -lws2_32 -lgdi32 -lopengl32 -lwinmm -lncrypt -lsecur32 -lcrypt32
-else
-	LDFLAGS += -lz
 endif
+AR ?= ar
 SRCS = $(shell find src -name *.cpp)
 SRCS += $(IMGUI_DIR)/imgui.cpp $(IMGUI_DIR)/imgui_demo.cpp $(IMGUI_DIR)/imgui_draw.cpp $(IMGUI_DIR)/imgui_tables.cpp $(IMGUI_DIR)/imgui_widgets.cpp
 SRCS += $(RLIMGUI_DIR)/rlImGui.cpp
@@ -73,13 +74,17 @@ $(LIBRAYLIB):
 	$(MAKE) -C $(RAYLIB_DIR) $(RAYLIB_PLATFORM_OS)
 
 $(LIBLUA):
-	$(MAKE) -C $(LUA_DIR) liblua.a
+	$(MAKE) -C $(LUA_DIR) AR="$(AR) rcu" liblua.a
 
 $(FFMPEG_CONFIGURE):
 	cd $(FFMPEG_DIR) && ./configure $(FFMPEG_CONFIGURE_FLAGS)
 
 $(LIBFFMPEG) &: $(FFMPEG_CONFIGURE)
 	$(MAKE) -C $(FFMPEG_DIR)
+
+$(ZLIB):
+	cd $(ZLIB_DIR) && ./configure
+	$(MAKE) -C $(ZLIB_DIR)
 
 $(OBJS): $(LIBFFMPEG)
 
@@ -103,7 +108,7 @@ clean:
 fullclean: clean
 	make -C $(RAYLIB_DIR) clean
 	make -C $(LUA_DIR) clean
-	make -C $(FFMPEG_DIR) distclean
+	make -C $(FFMPEG_DIR) distclean || true
 	rm -f .vscode/compile_commands.json
 
 lsp: .vscode/compile_commands.json

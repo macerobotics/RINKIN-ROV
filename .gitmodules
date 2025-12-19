@@ -13,3 +13,6 @@
 [submodule "rinkin-ui/lib/implot"]
 	path = rinkin-ui/lib/implot
 	url = https://github.com/epezent/implot
+[submodule "rinkin-ui/lib/zlib"]
+	path = rinkin-ui/lib/zlib
+	url = https://github.com/madler/zlib
