@@ -43,9 +43,6 @@ LIBFFMPEG = $(FFMPEG_DIR)/libavformat/libavformat.a $(FFMPEG_DIR)/libavcodec/lib
 ZLIB = $(ZLIB_DIR)/libz.a
 STATIC_LIBS = $(LIBRAYLIB) $(LIBLUA) $(LIBFFMPEG) $(ZLIB)
 
-#FFMPEG_LDFLAGS = -L$(FFMPEG_DIR)/libavformat -L$(FFMPEG_DIR)/libavcodec -L$(FFMPEG_DIR)/libswscale/ -L$(FFMPEG_DIR)/libavutil/ -lavformat -lavcodec -lavutil -lswscale
-#FFMPEG_LDFLAGS = -lavformat -lavcodec -lamake fullvutil -lswscale
-
 INCLUDE_DIRS = -I$(IMGUI_DIR) -Ilib/rlImGui -I$(RAYLIB_DIR) -I$(RAYLIB_DIR)/../examples/shaders -I$(LUA_DIR) -I$(FFMPEG_DIR) -I$(IMPLOT_DIR)
 CXXFLAGS = -std=c++11 -pedantic -Wall -MMD -MP $(INCLUDE_DIRS) -g -Os
 LDFLAGS = $(FFMPEG_LDFLAGS) -lpthread
