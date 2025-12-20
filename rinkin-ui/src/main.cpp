@@ -15,10 +15,21 @@
 #include "util.h"
 #include "windows_fix.h"
 
-#include "lighting.vs.h"
-#include "lighting.fs.h"
-
+#ifndef GLSL_VERSION
 #define GLSL_VERSION            330
+#endif
+
+#if GLSL_VERSION == 330
+#include "shaders/glsl330/lighting.vs.h"
+#include "shaders/glsl330/lighting.fs.h"
+#elif GLSL_VERSION == 120
+#include "shaders/glsl120/lighting.vs.h"
+#include "shaders/glsl120/lighting.fs.h"
+#else
+#error "Invalid GLSL version"
+#endif
+
+
 
 float heading = 0.0f, pitch = 0.0f, roll = 0.0f;
 RenderTexture2D model_texture;
@@ -41,6 +52,9 @@ int main(int argc, char* argv[]) {
 	if(!L) FATAL("failed to initialize Lua");
 	luaL_openlibs(L);
 	lua_register_bindings(L);
+
+	printf("GLSL_VERSION=%d\n", GLSL_VERSION);
+	printf("%.*s\n", lighting_fs_len, lighting_fs);
 	
 	
 	int screenWidth = 1280;

@@ -49,6 +49,9 @@ LDFLAGS = $(FFMPEG_LDFLAGS) -lpthread
 ifeq ($(TARGET),windows)
 	LDFLAGS += -lws2_32 -lgdi32 -lopengl32 -lwinmm -lncrypt -lsecur32 -lcrypt32
 endif
+ifeq ($(TARGET),rpi)
+	CXXFLAGS += -DGLSL_VERSION=120
+endif
 AR ?= ar
 SRCS = $(shell find src -name *.cpp)
 SRCS += $(IMGUI_DIR)/imgui.cpp $(IMGUI_DIR)/imgui_demo.cpp $(IMGUI_DIR)/imgui_draw.cpp $(IMGUI_DIR)/imgui_tables.cpp $(IMGUI_DIR)/imgui_widgets.cpp
@@ -68,7 +71,7 @@ build/%.cpp.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(LIBRAYLIB):
-	$(MAKE) -C $(RAYLIB_DIR) $(RAYLIB_PLATFORM_OS)
+	$(MAKE) -C $(RAYLIB_DIR) PLATFORM=PLATFORM_DESKTOP $(RAYLIB_PLATFORM_OS)
 
 $(LIBLUA):
 	$(MAKE) -C $(LUA_DIR) AR="$(AR) rcu" liblua.a
@@ -94,6 +97,9 @@ WINDOWS_FFMPEG_CONFIGURE_FLAGS = \
 windows: 
 	$(MAKE) TARGET=windows CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ FFMPEG_CROSS_FLAGS="$(WINDOWS_FFMPEG_CONFIGURE_FLAGS)" RAYLIB_PLATFORM_OS="PLATFORM_OS=WINDOWS"
 
+rpi:
+	$(MAKE) TARGET=rpi CC=aarch64-linux-gnu-gcc CXX=aarch64-linux-gnu-g++ AR=aarch64-linux-gnu-ar RANLIB=aarch64-linux-gnu-ranlib GRAPHICS=GRAPHICS_API_OPENGL_21
+
 .PHONY: run clean fullclean lsp
 
 run: bin/$(EXE)
@@ -106,6 +112,7 @@ fullclean: clean
 	make -C $(RAYLIB_DIR) clean
 	make -C $(LUA_DIR) clean
 	make -C $(FFMPEG_DIR) distclean || true
+	make -C $(ZLIB_DIR) distclean
 	rm -f .vscode/compile_commands.json
 
 lsp: .vscode/compile_commands.json

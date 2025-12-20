@@ -20,6 +20,6 @@ RUN x86_64-w64-mingw32-strip bin/rinkin.exe
 RUN mv bin/rinkin.exe output/
 RUN make fullclean
 RUN cd lib/ffmpeg-8.0 && ./configure --disable-encoders --disable-hwaccels --disable-muxers --disable-filters --disable-indevs --disable-outdevs --disable-programs --disable-doc --disable-libdrm --disable-v4l2-m2m --disable-vaapi --disable-vdpau --disable-vulkan --disable-alsa --disable-sndio --disable-xlib --disable-sdl2 --disable-cuda --disable-nvdec --disable-nvenc --disable-opencl --disable-libopus --disable-lzma --disable-decoder=opus --disable-bzlib --extra-cflags="-Os -fPIC" --extra-ldflags="-s" --target-os=linux --arch=aarch64 --enable-cross-compile --cross-prefix=aarch64-linux-gnu-
-RUN make -j CC=aarch64-linux-gnu-gcc CXX=aarch64-linux-gnu-g++ AR=aarch64-linux-gnu-ar RANLIB=aarch64-linux-gnu-ranlib GRAPHICS=GRAPHICS_API_OPENGL_21
+RUN make -j rpi
 RUN aarch64-linux-gnu-strip bin/rinkin
 RUN mv bin/rinkin output/rinkin-raspberry-pi
