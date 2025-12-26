@@ -11,6 +11,10 @@ if [ ! -f setup/mediamtx/mediamtx ]; then
     popd
 fi
 
+pushd rinkin
+GOOS=linux GOOARCH=arm64 go build
+popd
+
 rsync -avh setup rinkin@${IP}:~
 rsync -avh rinkin rinkin@${IP}:~
 ssh rinkin@${IP} "cd setup && bash setup.sh"

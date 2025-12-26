@@ -20,11 +20,8 @@ sudo systemctl daemon-reload
 sudo systemctl enable mediamtx.service
 sudo systemctl start mediamtx.service
 
-# Installation du programme en python
+# Installation du programme en go
 cd /home/rinkin/rinkin
-python3 -m venv .venv
-ls .venv/bin
-.venv/bin/pip install -r requirements.txt
 sudo cp -u rinkin.service /etc/systemd/system
 sudo systemctl daemon-reload
 sudo systemctl enable rinkin.service

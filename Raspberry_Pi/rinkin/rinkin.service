@@ -4,10 +4,9 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/home/rinkin/rinkin/.venv/bin/python /home/rinkin/rinkin/rinkin.py
+ExecStart=/home/rinkin/rinkin/rinkin
 WorkingDirectory=/home/rinkin/rinkin/
 Restart=on-failure
-Environment=PYTHONUNBUFFERED=1
 User=rinkin
 Group=rinkin
 
