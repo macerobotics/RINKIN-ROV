@@ -28,6 +28,8 @@ function setup()
         elseif command == "roll" then
             model.set_roll(param)
             roll:append(param)
+        elseif command == "BAT" then
+        	print("batterie:", param)
         end
     end
 
