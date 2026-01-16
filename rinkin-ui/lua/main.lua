@@ -15,10 +15,10 @@ function setup()
     roll = plot.new("roll", 1000)
     speed_plot = plot.new("vitesse", 1000)
     udp.on_receive = function(msg)
-        print("udp: " .. msg)
-        local command, param = msg:match("^#(%a+),([^!]+)!$")
+        --print("udp: " .. msg)
+        local command, param = msg:match("^#(%a+),([^!]+)!%s*$")
         param = tonumber(param)
-        print(command, param)
+        --print(command, param)
         if command == "heading" then
             model.set_heading(param)
             heading:append(param)
@@ -67,12 +67,32 @@ function loop()
         ImGui.EndGroup()
 
         ImGui.SeparatorText("Script")
-        if ImGui.Button("Allumer LED") then
+        if ImGui.Button("Allumer LED A") then
+            udp.send("#LEDA,1!\n")
+        end
+        ImGui.SameLine()
+        if ImGui.Button("Éteindre LED A") then
+            udp.send("#LEDA,0!\n")
+        end
+        ImGui.SameLine()
+        if ImGui.Button("Allumer LED B") then
             udp.send("#LEDB,1!\n")
         end
         ImGui.SameLine()
-        if ImGui.Button("Éteindre LED") then
+        if ImGui.Button("Éteindre LED B") then
             udp.send("#LEDB,0!\n")
+        end
+        ImGui.SameLine()
+        if ImGui.Button("Allumer Test") then
+            udp.send("#TEST,1!\n")
+        end
+        ImGui.SameLine()
+        if ImGui.Button("Eteindre Test") then
+            udp.send("#TEST,0!\n")
+        end
+        ImGui.SameLine()
+        if ImGui.Button("Batterie") then
+            udp.send("#BAT!\n")
         end
         gamepad_enabled = ImGui.Checkbox("Gamepad activé", gamepad_enabled)
         local modified
