@@ -115,7 +115,7 @@ int main(int argc, char* argv[]) {
 		float cameraPos[3] = { camera.position.x, camera.position.y, camera.position.z };
         SetShaderValue(shader, shader.locs[SHADER_LOC_VECTOR_VIEW], cameraPos, SHADER_UNIFORM_VEC3);
 
-		model.transform = MatrixRotateXYZ((Vector3){pitch, heading, roll});
+		model.transform = MatrixRotateXYZ((Vector3){roll, heading, pitch});
 
 		BeginTextureMode(model_texture);
 		{
