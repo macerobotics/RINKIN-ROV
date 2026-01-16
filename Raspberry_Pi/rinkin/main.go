@@ -26,7 +26,10 @@ func main() {
 	defer conn.Close()
 
 	mode := &serial.Mode{
-		BaudRate: 115200,
+		BaudRate: 921600,
+		DataBits: 8,
+		Parity:   serial.NoParity,
+		StopBits: serial.OneStopBit,
 	}
 	port, err := serial.Open("/dev/ttyS0", mode)
 	if err != nil {
@@ -44,9 +47,16 @@ func main() {
 		case addr := <-addrChan:
 			clientAddr = addr
 		case udpPacket := <-udpChan:
-			port.Write([]byte(udpPacket))
+			n, err := port.Write([]byte(udpPacket))
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "failed to write to serial port: %s\n", err)
+			} else {
+				fmt.Printf("wrote %d bytes to the serial port:\n", n)
+				fmt.Printf("udpPacket = %s\n", udpPacket)
+			}
 		case serialMsg := <-serialChan:
 			if clientAddr != nil {
+				fmt.Printf("received from uart: %s\n", serialMsg)
 				conn.WriteToUDP([]byte(serialMsg), clientAddr)
 			}
 		case imuMsg := <-imuChan:
@@ -68,6 +78,7 @@ func udpRecv(conn *net.UDPConn) (<-chan string, chan *net.UDPAddr) {
 				fmt.Fprintln(os.Stderr, err)
 				continue
 			}
+			fmt.Printf("received %s\n", buffer[:n])
 			addrChan <- clientAddr
 			msgChan <- string(buffer[:n])
 		}
