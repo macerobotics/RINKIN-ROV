@@ -1,4 +1,4 @@
-EXE = rinkin
+EXE ?= rinkin
 IMGUI_DIR = lib/imgui
 RAYLIB_DIR = lib/raylib/src
 RLIMGUI_DIR = lib/rlImGui
@@ -65,6 +65,7 @@ all: bin/$(EXE)
 bin/$(EXE): $(OBJS) $(STATIC_LIBS)
 	mkdir -p bin
 	$(CXX) $^ -o $@ $(LDFLAGS)
+	$(PREFIX)strip $@
 
 build/%.cpp.o: %.cpp
 	mkdir -p $(dir $@)
@@ -95,10 +96,10 @@ WINDOWS_FFMPEG_CONFIGURE_FLAGS = \
 	--cross-prefix=x86_64-w64-mingw32-
 
 windows: 
-	$(MAKE) TARGET=windows CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ FFMPEG_CROSS_FLAGS="$(WINDOWS_FFMPEG_CONFIGURE_FLAGS)" RAYLIB_PLATFORM_OS="PLATFORM_OS=WINDOWS"
+	$(MAKE) TARGET=windows EXE=rinkin.exe PREFIX=x86_64-w64-mingw32- CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ FFMPEG_CROSS_FLAGS="$(WINDOWS_FFMPEG_CONFIGURE_FLAGS)" RAYLIB_PLATFORM_OS="PLATFORM_OS=WINDOWS"
 
 rpi:
-	$(MAKE) TARGET=rpi CC=aarch64-linux-gnu-gcc CXX=aarch64-linux-gnu-g++ AR=aarch64-linux-gnu-ar RANLIB=aarch64-linux-gnu-ranlib GRAPHICS=GRAPHICS_API_OPENGL_21
+	$(MAKE) TARGET=rpi PREFIX=aarch64-linux-gnu- CC=aarch64-linux-gnu-gcc CXX=aarch64-linux-gnu-g++ AR=aarch64-linux-gnu-ar RANLIB=aarch64-linux-gnu-ranlib GRAPHICS=GRAPHICS_API_OPENGL_21
 
 .PHONY: run clean fullclean lsp
 
@@ -114,10 +115,14 @@ fullclean: clean
 	make -C $(FFMPEG_DIR) distclean || true
 	make -C $(ZLIB_DIR) distclean
 	rm -f .vscode/compile_commands.json
+	rm -f rinkin-windows.zip
 
 lsp: .vscode/compile_commands.json
 
 .vscode/compile_commands.json:
 	bear --output $@ -- make clean all
+
+rinkin-windows.zip: windows
+	zip $@ bin/rinkin.exe lua/main.lua model.obj
 
 -include $(DEPS)
