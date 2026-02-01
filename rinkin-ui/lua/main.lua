@@ -3,7 +3,9 @@
 -- moteur de 0 à 4, vitesse de -20 à 20
 
 video_resolution = {x = 640, y = 480}
-speed = 0
+speed0 = 0
+speed1 = 0
+speed2 = 0
 gamepad_enabled = false
 
 function setup()
@@ -37,12 +39,12 @@ end
 
 function loop()
     if gamepad_enabled then
-     speed = round(-20 * gamepad.get_axis_movement(0, 3))
+     speed0 = round(-20 * gamepad.get_axis_movement(0, 3))
     end
 
-    speed_plot:append(speed)
+    speed_plot:append(speed0)
 
-    cmd = "#0m" .. tostring(math.floor(speed)) .. "!\n"
+    cmd = "#0m" .. tostring(math.floor(speed0)) .. "!\n"
     --udp.send(cmd)
 
     if gamepad.is_button_pressed(0, 11) then
@@ -70,37 +72,45 @@ function loop()
 
         ImGui.SeparatorText("Script")
         if ImGui.Button("Allumer LED A") then
-            udp.send("#LEDA,1!\n")
+            udp.send("#0l1!\n")
         end
         ImGui.SameLine()
         if ImGui.Button("Éteindre LED A") then
-            udp.send("#LEDA,0!\n")
+            udp.send("#0l0!\n")
         end
         ImGui.SameLine()
         if ImGui.Button("Allumer LED B") then
-            udp.send("#LEDB,1!\n")
+            udp.send("#1l1!\n")
         end
         ImGui.SameLine()
         if ImGui.Button("Éteindre LED B") then
-            udp.send("#LEDB,0!\n")
+            udp.send("#1l0!\n")
         end
         ImGui.SameLine()
         if ImGui.Button("Allumer Test") then
-            udp.send("#TEST,1!\n")
+            udp.send("#2l1!\n")
         end
         ImGui.SameLine()
         if ImGui.Button("Eteindre Test") then
-            udp.send("#TEST,0!\n")
+            udp.send("#2l0!\n")
         end
         ImGui.SameLine()
         if ImGui.Button("Batterie") then
-            udp.send("#BAT!\n")
+            udp.send("#0b0!\n")
         end
         gamepad_enabled = ImGui.Checkbox("Gamepad activé", gamepad_enabled)
         local modified
-        speed, modified = ImGui.SliderInt("Vitesse moteur", speed, -20, 20)
+        speed0, modified = ImGui.SliderInt("Vitesse moteur 0", speed0, -20, 20)
         if modified then
-            udp.send("#0m" .. tostring(speed) .. "!\n")
+            udp.send("#0m" .. tostring(speed0) .. "!\n")
+        end
+        speed1, modified = ImGui.SliderInt("Vitesse moteur 1", speed1, -20, 20)
+        if modified then
+            udp.send("#1m" .. tostring(speed1) .. "!\n")
+        end
+        speed2, modified = ImGui.SliderInt("Vitesse moteur 2", speed2, -20, 20)
+        if modified then
+            udp.send("#2m" .. tostring(speed2) .. "!\n")
         end
         if plot.Begin("Vitesse moteur##plot", 320, 240) then
             plot.x_axis_limits(0, 1000, "always")
