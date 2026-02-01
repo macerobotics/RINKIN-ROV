@@ -26,7 +26,7 @@ func main() {
 	defer conn.Close()
 
 	mode := &serial.Mode{
-		BaudRate: 921600,
+		BaudRate: 9600,
 		DataBits: 8,
 		Parity:   serial.NoParity,
 		StopBits: serial.OneStopBit,
