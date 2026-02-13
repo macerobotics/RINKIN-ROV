@@ -139,7 +139,7 @@ for target_name, target in targets.items():
     #writer.rule("cpp_debug", "$cxx $cpp_flags_debug -MD -MF $out.d $cflags -c -o $out $in", depfile="$out.d")
     writer.rule(f"cpp_release_{target_name}", f"$cxx_{target_name} $cpp_flags_{target_name} -MD -MF $out.d $cflags -c -o $out $in", depfile="$out.d")
     writer.rule(f"link_{target_name}", f"$cxx_{target_name} -o $out $in $ldflags")
-    writer.rule(f"make_{target_name}", f"make CC={cc} CXX={cxx} $makefile $ar RANLIB={ranlib} -j4 -C $dir $target $options")
+    writer.rule(f"make_{target_name}", f"make CC={cc} CXX={cxx} $makefile $ar RANLIB={ranlib} -j8 -C $dir $target $options")
     writer.rule(f"configure_{target_name}", "mkdir -p $build_dir && cd $build_dir && $env_vars $cmd $flags", generator=True)
     writer.rule(f"copy_{target_name}", f"cp -r $in build/{target_name}")
 
