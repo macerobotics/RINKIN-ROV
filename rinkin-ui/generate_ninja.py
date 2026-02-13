@@ -40,6 +40,12 @@ targets = {
         "exe": "rinkin",
         "ffmpeg-extra-flags": [],
         "prefix": "aarch64-linux-gnu-",
+        "ffmpeg-extra-flags": [
+            '--target-os=linux',
+	        '--arch=aarch64',
+	        '--enable-cross-compile',
+	        '--cross-prefix=aarch64-linux-gnu-'
+        ],
         "ldflags": [],
         "lua-target": "linux"
     }
