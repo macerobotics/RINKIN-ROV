@@ -30,3 +30,5 @@ lib/ffmpeg-8.0/libavformat/protocol_list.c
 lib/ffmpeg-8.0/libavutil/avconfig.h
 lib/ffmpeg-8.0/libavutil/ffversion.h
 __pycache__
+build.ninja
+.ninja_log
