@@ -9,7 +9,9 @@ speed2 = 0
 gamepad_enabled = false
 
 function setup()
-    local ip = "192.168.0.1"
+    --local ip = "192.168.0.1"
+    --local ip = "192.168.10.90"
+    local ip = "192.168.4.1"
     v = video.new("rtsp://" .. ip .. ":8554/cam", video_resolution.x, video_resolution.y)
     udp.init(ip, 1234)
     heading = plot.new("heading", 1000)
@@ -118,7 +120,7 @@ function loop()
             speed_plot:display()
             plot.End()
         end
-
+--[[
         if ImGui.BeginChild("Script", 100, 100) then
             if ImGui.Button("Recharger") then dofile("lua/main.lua") end
             ImGui.Text(tostring(gamepad.get_axis_count(0)))
@@ -131,8 +133,9 @@ function loop()
             ImGui.Text(tostring(gamepad.is_button_down(0, 11)))
         end
         ImGui.EndChild()
-
-        if plot.Begin("IMU", 640, 400) then
+]]--
+        ImGui.SameLine()
+        if plot.Begin("IMU", 320, 240) then
             plot.x_axis_limits(0, 1000, "always")
             plot.y_axis_limits(0, 360)
             heading:display()
