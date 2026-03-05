@@ -44,6 +44,14 @@ void lua_simple_fcall(lua_State *L, const char *fname) {
 	lua_settop(L, 0);
 }
 
+void lua_reload(lua_State *L) {
+	int res = luaL_dofile(L, "lua/main.lua");
+	if(res != LUA_OK) {
+		fprintf(stderr, "%s\n", lua_tostring(L, -1));
+		lua_settop(L, 0);
+	}
+}
+
 int main(int argc, char* argv[]) {
 	#ifdef _WIN32
 	windows_networking_init();
@@ -91,15 +99,13 @@ int main(int argc, char* argv[]) {
     	model.materials[i].shader = shader;
 	}
 
-	int res = luaL_dofile(L, "lua/main.lua");
-	if(res != LUA_OK) {
-		fprintf(stderr, "%s\n", lua_tostring(L, -1));
-		lua_settop(L, 0);
-	}
+	lua_reload(L);
 
 	lua_simple_fcall(L, "setup");
 
 	while (!WindowShouldClose()) {
+		if(IsKeyPressed(KEY_F5))
+			lua_reload(L);
 		lua_udp_callback(L);
 		float motor = GetGamepadAxisMovement(0, 3) * -1;
 		static float last_motor = 0;
