@@ -2,10 +2,17 @@
 -- #0m20!   <- moteur 0, vitesse 20
 -- moteur de 0 à 4, vitesse de -20 à 20
 
+local motor = require("motor")
+
 video_resolution = {x = 640, y = 480}
-speed0 = 0
-speed1 = 0
-speed2 = 0
+
+
+motors = {}
+for i = 1, 5 do
+    table.insert(motors, motor:new(i))
+end
+
+
 gamepad_enabled = false
 
 function setup()
@@ -17,7 +24,6 @@ function setup()
     heading = plot.new("heading", 1000)
     pitch = plot.new("pitch", 1000)
     roll = plot.new("roll", 1000)
-    speed_plot = plot.new("vitesse", 1000)
     udp.on_receive = function(msg)
         --print("udp: " .. msg)
         local command, param = msg:match("^#(%a+),([^!]+)!%s*$")
@@ -41,13 +47,9 @@ end
 
 function loop()
     if gamepad_enabled then
-     speed0 = round(-20 * gamepad.get_axis_movement(0, 3))
+     motors[1]:set_speed(round(-20 * gamepad.get_axis_movement(0, 3)))
     end
 
-    speed_plot:append(speed0)
-
-    cmd = "#0m" .. tostring(math.floor(speed0)) .. "!\n"
-    --udp.send(cmd)
 
     if gamepad.is_button_pressed(0, 11) then
         udp.send("#LEDB,1!\n")
@@ -101,23 +103,17 @@ function loop()
             udp.send("#0b0!\n")
         end
         gamepad_enabled = ImGui.Checkbox("Gamepad activé", gamepad_enabled)
-        local modified
-        speed0, modified = ImGui.SliderInt("Vitesse moteur 0", speed0, -20, 20)
-        if modified then
-            udp.send("#0m" .. tostring(speed0) .. "!\n")
+
+        for _, m in ipairs(motors) do
+            m:slider()
         end
-        speed1, modified = ImGui.SliderInt("Vitesse moteur 1", speed1, -20, 20)
-        if modified then
-            udp.send("#1m" .. tostring(speed1) .. "!\n")
-        end
-        speed2, modified = ImGui.SliderInt("Vitesse moteur 2", speed2, -20, 20)
-        if modified then
-            udp.send("#2m" .. tostring(speed2) .. "!\n")
-        end
+
         if plot.Begin("Vitesse moteur##plot", 320, 240) then
             plot.x_axis_limits(0, 1000, "always")
             plot.y_axis_limits(-20, 20, "always")
-            speed_plot:display()
+            for _, m in ipairs(motors) do
+                m:display_plot()
+            end
             plot.End()
         end
 --[[
