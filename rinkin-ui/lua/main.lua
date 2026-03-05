@@ -50,6 +50,10 @@ function loop()
      motors[1]:set_speed(round(-20 * gamepad.get_axis_movement(0, 3)))
     end
 
+    for _, m in ipairs(motors) do
+        m:update()
+    end
+
 
     if gamepad.is_button_pressed(0, 11) then
         udp.send("#LEDB,1!\n")
