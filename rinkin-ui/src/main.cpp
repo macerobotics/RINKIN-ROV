@@ -159,15 +159,7 @@ int main(int argc, char* argv[]) {
 
 			ui();
 
-			if(ImGui::Begin("Moteurs")) {
-				if(ImGui::SliderFloat("Moteur 1", &motor, -1, 1)) {
-
-				}
-			}
-			ImGui::End();
-
 			//ImGui::ShowDemoWindow();
-
 
 			rlImGuiEnd();
 		}
