@@ -67,10 +67,6 @@ lua_State *lua_start(lua_State *L) {
 	return L;
 }
 
-void lua_main(lua_State *L) {
-	
-}
-
 int main(int argc, char* argv[]) {
 	#ifdef _WIN32
 	windows_networking_init();
