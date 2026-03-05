@@ -123,15 +123,6 @@ int main(int argc, char* argv[]) {
 			lua_main(L);
 		}
 		lua_udp_callback(L);
-		float motor = GetGamepadAxisMovement(0, 3) * -1;
-		static float last_motor = 0;
-		if(motor != last_motor) {
-			char payload[6] = {0};
-			sprintf(payload, "%.03f", motor);
-			LOG("publish /motor %s", payload);
-			//mosquitto_publish(mosq, nullptr, "/motor", strlen(payload) + 1, payload, 0, false);
-			last_motor = motor;
-		}
 
 		//UpdateCamera(&camera, CAMERA_ORBITAL);
 		float cameraPos[3] = { camera.position.x, camera.position.y, camera.position.z };
