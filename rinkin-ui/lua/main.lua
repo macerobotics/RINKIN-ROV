@@ -139,6 +139,22 @@ function loop()
             roll:display()
             plot.End()
         end
+
+        ImGui.SameLine()
+
+        if ImGui.BeginChild("Gamepad", 320, 240) then
+            if gamepad.is_available(0) then 
+                ImGui.Text(gamepad.get_name(0))
+                local axis_count = gamepad.get_axis_count(0)
+                for i = 1, axis_count do
+                    ImGui.PushID(i)
+                    local val = gamepad.get_axis_movement(0, i)
+                    ImGui.InputDouble(tostring(i), val)
+                    ImGui.PopID();
+                end
+            end
+        end
+        ImGui.EndChild()
         
     end
     ImGui.End()

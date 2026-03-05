@@ -11,7 +11,6 @@
 #include "lua_bindings/lua_bindings.h"
 #include "lua_bindings/lua_udp.h"
 #include "config.h"
-#include "ui.h"
 #include "util.h"
 #include "windows_fix.h"
 
@@ -151,10 +150,6 @@ int main(int argc, char* argv[]) {
 			rlImGuiBegin();
 
 			lua_simple_fcall(L, "loop");
-
-			ui();
-
-			//ImGui::ShowDemoWindow();
 
 			rlImGuiEnd();
 		}

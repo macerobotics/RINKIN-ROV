@@ -38,6 +38,55 @@ static int lua_imgui_end_group(lua_State *L) {
     return 0;
 }
 
+static int lua_imgui_push_id(lua_State *L) {
+    switch(lua_type(L, 1)) {
+    case LUA_TNIL:
+        luaL_argerror(L, 1, "can't use `nil' with PushID");
+        break;
+    case LUA_TBOOLEAN: {
+        bool b = lua_toboolean(L, 1);
+        ImGui::PushID(b);
+        break;
+    }
+    case LUA_TLIGHTUSERDATA: {
+        void *p = lua_touserdata(L, 1);
+        ImGui::PushID(p);
+        break;
+    }
+    case LUA_TNUMBER: {
+        int i = luaL_checkinteger(L, 1);
+        ImGui::PushID(i);
+        break;
+    }
+    case LUA_TSTRING: {
+        const char *str = lua_tostring(L, 1);
+        ImGui::PushID(str);
+        break;
+    }
+    case LUA_TTABLE:
+        luaL_argerror(L, 1, "can't use floating tables with PushID");
+        break;
+    case LUA_TFUNCTION:
+        luaL_argerror(L, 1, "can't use functions with PushID");
+        break;
+    case LUA_TUSERDATA:
+        luaL_argerror(L, 1, "can't use userdata with PushID");
+        break;
+    case LUA_TTHREAD:
+        luaL_argerror(L, 1, "can't use coroutines with PushID");
+        break;
+    default:
+        luaL_argerror(L, 1, "unexpected lua type");
+    }
+    return 0;
+}
+
+static int lua_imgui_pop_id(lua_State *L) {
+    ImGui::PopID();
+    return 0;
+}
+
+
 static int lua_imgui_set_next_window_pos(lua_State *L) {
     int x = luaL_checkinteger(L, 1);
     int y = luaL_checkinteger(L, 2);
@@ -69,6 +118,15 @@ static int lua_imgui_button(lua_State *L) {
     const char *label = luaL_checkstring(L, 1);
     lua_pushboolean(L, ImGui::Button(label));
     return 1;
+}
+
+static int lua_imgui_input_double(lua_State *L) {
+    const char *label = luaL_checkstring(L, 1);
+    double v = luaL_checknumber(L, 2);
+    bool modified = ImGui::InputDouble(label, &v);
+    lua_pushnumber(L, v);
+    lua_pushboolean(L, modified);
+    return 2;
 }
 
 static int lua_imgui_slider_int(lua_State *L) {
@@ -111,11 +169,14 @@ int lua_open_imgui(lua_State *L) {
         {"EndChild", lua_imgui_end_child},
         {"BeginGroup", lua_imgui_begin_group},
         {"EndGroup", lua_imgui_end_group},
+        {"PushID", lua_imgui_push_id},
+        {"PopID", lua_imgui_pop_id},
         {"SetNextWindowPos", lua_imgui_set_next_window_pos},
         {"SetNextWindowSize", lua_imgui_set_next_window_size},
         {"GetViewportSize", lua_imgui_get_viewport_size},
         {"Text", lua_imgui_text},
         {"Button", lua_imgui_button},
+        {"InputDouble", lua_imgui_input_double},
         {"SliderInt", lua_imgui_slider_int},
         {"Checkbox", lua_imgui_checkbox},
         {"SameLine", lua_imgui_sameline},
