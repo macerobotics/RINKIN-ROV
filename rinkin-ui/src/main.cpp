@@ -116,7 +116,6 @@ int main(int argc, char* argv[]) {
 	while (!WindowShouldClose()) {
 		if(IsKeyPressed(KEY_F5)) {
 			L = lua_start(L);
-			lua_main(L);
 		}
 		lua_udp_callback(L);
 
