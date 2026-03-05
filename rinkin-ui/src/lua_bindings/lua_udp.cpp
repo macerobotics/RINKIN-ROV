@@ -35,7 +35,7 @@ static int lua_udp_init(lua_State *L) {
     const char *ip = luaL_checkstring(L, 1);
     const int port = luaL_checkinteger(L, 2);
     luaL_argcheck(L, port >= 0 && port <= 65535, 2, "invalid port");
-    if(sock != -1) luaL_error(L, "UDP already started");
+    if(sock != -1) closesocket(sock);
     sock = socket(AF_INET, SOCK_DGRAM, 0);
     if(sock == -1) luaL_error(L, "failed to create socket");
     memset(&in_addr, 0, sizeof(SOCKADDR_IN));

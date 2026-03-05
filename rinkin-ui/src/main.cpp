@@ -44,23 +44,38 @@ void lua_simple_fcall(lua_State *L, const char *fname) {
 	lua_settop(L, 0);
 }
 
-void lua_reload(lua_State *L) {
+lua_State *lua_start(lua_State *L) {
+	if(L) lua_close(L);
+	L = luaL_newstate();
+	if(!L) FATAL("failed to initialize Lua");
+	luaL_openlibs(L);
+	lua_register_bindings(L);
+
+	if(luaL_dostring(L, "package.path = './lua/?.lua;' .. package.path") != LUA_OK) {
+		fprintf(stderr, "%s\n", lua_tostring(L, -1));
+		lua_close(L);
+		return NULL;
+	}
+
 	int res = luaL_dofile(L, "lua/main.lua");
 	if(res != LUA_OK) {
 		fprintf(stderr, "%s\n", lua_tostring(L, -1));
 		lua_settop(L, 0);
 	}
+	lua_simple_fcall(L, "setup");
+
+	return L;
+}
+
+void lua_main(lua_State *L) {
+	
 }
 
 int main(int argc, char* argv[]) {
 	#ifdef _WIN32
 	windows_networking_init();
 	#endif
-	lua_State *L = luaL_newstate();
-	if(!L) FATAL("failed to initialize Lua");
-	luaL_openlibs(L);
-	lua_register_bindings(L);
-
+	
 	printf("GLSL_VERSION=%d\n", GLSL_VERSION);
 	printf("%.*s\n", lighting_fs_len, lighting_fs);
 	
@@ -99,13 +114,14 @@ int main(int argc, char* argv[]) {
     	model.materials[i].shader = shader;
 	}
 
-	lua_reload(L);
-
-	lua_simple_fcall(L, "setup");
+	lua_State *L = lua_start(NULL);
+	if(L == NULL) return 1;
 
 	while (!WindowShouldClose()) {
-		if(IsKeyPressed(KEY_F5))
-			lua_reload(L);
+		if(IsKeyPressed(KEY_F5)) {
+			L = lua_start(L);
+			lua_main(L);
+		}
 		lua_udp_callback(L);
 		float motor = GetGamepadAxisMovement(0, 3) * -1;
 		static float last_motor = 0;
@@ -167,12 +183,14 @@ int main(int argc, char* argv[]) {
 		EndDrawing();
 	}
 
+cleanup:
+
+	if(L) lua_close(L);
 	UnloadShader(shader);
 	UnloadModel(model);
 	ImPlot::DestroyContext();
     rlImGuiShutdown();
 	CloseWindow();
-	lua_close(L);
 	#ifdef _WIN32
 	windows_networking_cleanup();
 	#endif

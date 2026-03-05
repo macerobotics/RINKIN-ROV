@@ -214,6 +214,7 @@ static int lua_video_to_string(lua_State *L) {
 static int lua_video_gc(lua_State *L) {
     Video *v = checkvideo(L);
     video_stop(v);
+    rlUnloadTexture(v->texture.id);
     v->~Video();
     return 0;
 }
