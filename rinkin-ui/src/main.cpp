@@ -115,7 +115,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	lua_State *L = lua_start(NULL);
-	if(L == NULL) return 1;
+	if(L == NULL) goto cleanup;
 
 	while (!WindowShouldClose()) {
 		if(IsKeyPressed(KEY_F5)) {
