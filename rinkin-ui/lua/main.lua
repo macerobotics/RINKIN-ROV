@@ -150,7 +150,7 @@ function loop()
             if gamepad.is_available(0) then 
                 ImGui.Text(gamepad.get_name(0))
                 local axis_count = gamepad.get_axis_count(0)
-                for i = 1, axis_count do
+                for i = 0, axis_count - 1 do
                     ImGui.PushID(i)
                     local val = gamepad.get_axis_movement(0, i)
                     ImGui.InputDouble(tostring(i), val)
