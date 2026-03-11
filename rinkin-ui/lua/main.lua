@@ -13,7 +13,21 @@ for i = 1, 5 do
 end
 
 
-gamepad_enabled = false
+gamepad_enabled = true
+
+pow = 1.0
+
+local function axis(i)
+    local val = gamepad.get_axis_movement(0, i)
+    if i == 4 or i == 5 then
+        val = (val + 1) / 2
+    end
+    if val >= 0 then
+        return val ^ pow
+    else
+        return - math.abs(val) ^ pow
+    end
+end
 
 function setup()
     --local ip = "192.168.0.1"
@@ -47,7 +61,7 @@ end
 
 function loop()
     if gamepad_enabled then
-     motors[1]:set_speed(round(-20 * gamepad.get_axis_movement(0, 3)))
+     --motors[1]:set_speed(round(-20 * gamepad.get_axis_movement(0, 3)))
     end
 
     for _, m in ipairs(motors) do
@@ -106,7 +120,18 @@ function loop()
         if ImGui.Button("Batterie") then
             udp.send("#0b0!\n")
         end
+
         gamepad_enabled = ImGui.Checkbox("Gamepad activé", gamepad_enabled)
+
+        pow = ImGui.SliderFloat("pow", pow, 0, 5)
+
+        if(gamepad_enabled) then
+            motors[1]:set_speed(round((axis(1) + axis(4) - axis(5)) * 20))
+            motors[2]:set_speed(round((-axis(3) + axis(0)) * 20))
+            motors[3]:set_speed(round((-axis(3) - axis(0)) * 20))
+            motors[4]:set_speed(round((-axis(1) + axis(4) - axis(5)) * 20))
+            motors[5]:set_speed(round((-axis(1) + axis(4) - axis(5)) * 20))
+        end
 
         for _, m in ipairs(motors) do
             m:slider()
@@ -146,19 +171,20 @@ function loop()
 
         ImGui.SameLine()
 
-        if ImGui.BeginChild("Gamepad", 320, 240) then
-            if gamepad.is_available(0) then 
+        if gamepad.is_available(0) then
+            if ImGui.BeginChild("Gamepad", 320, 240) then
                 ImGui.Text(gamepad.get_name(0))
                 local axis_count = gamepad.get_axis_count(0)
                 for i = 0, axis_count - 1 do
                     ImGui.PushID(i)
-                    local val = gamepad.get_axis_movement(0, i)
+                    --local val = gamepad.get_axis_movement(0, i)
+                    local val = axis(i)
                     ImGui.InputDouble(tostring(i), val)
                     ImGui.PopID();
                 end
             end
+            ImGui.EndChild()
         end
-        ImGui.EndChild()
         
     end
     ImGui.End()
@@ -166,8 +192,9 @@ end
 
 function round(x)
     if x >= 0 then
-        return math.floor(x + 0.5)
+        x = math.floor(x + 0.5)
     else
-        return math.ceil(x + 0.5)
+        x = math.ceil(x + 0.5)
     end
+    return math.tointeger(x)
 end
