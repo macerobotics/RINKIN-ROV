@@ -140,6 +140,17 @@ static int lua_imgui_slider_int(lua_State *L) {
     return 2;
 }
 
+static int lua_imgui_slider_float(lua_State *L) {
+    const char *label = luaL_checkstring(L, 1);
+    float v = luaL_checknumber(L, 2);
+    const int v_min = luaL_checkinteger(L, 3);
+    const int v_max = luaL_checkinteger(L, 4);
+    bool modified = ImGui::SliderFloat(label, &v, v_min, v_max);
+    lua_pushnumber(L, v);
+    lua_pushboolean(L, modified);
+    return 2;
+}
+
 static int lua_imgui_checkbox(lua_State *L) {
     const char *label = luaL_checkstring(L, 1);
     luaL_checktype(L, 2, LUA_TBOOLEAN);
@@ -178,6 +189,7 @@ int lua_open_imgui(lua_State *L) {
         {"Button", lua_imgui_button},
         {"InputDouble", lua_imgui_input_double},
         {"SliderInt", lua_imgui_slider_int},
+        {"SliderFloat", lua_imgui_slider_float},
         {"Checkbox", lua_imgui_checkbox},
         {"SameLine", lua_imgui_sameline},
         {"SeparatorText", lua_imgui_separator_text},
