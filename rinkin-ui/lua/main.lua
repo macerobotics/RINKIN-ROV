@@ -1,6 +1,6 @@
 -- commandes moteurs :
 -- #0m20!   <- moteur 0, vitesse 20
--- moteur de 0 à 4, vitesse de -20 à 20
+-- moteur de 0 à 4, vitesse de -9 à 9
 
 local motor = require("motor")
 
@@ -126,11 +126,11 @@ function loop()
         pow = ImGui.SliderFloat("pow", pow, 0, 5)
 
         if(gamepad_enabled) then
-            motors[1]:set_speed(round((axis(1) + axis(4) - axis(5)) * 20))
-            motors[2]:set_speed(round((-axis(3) + axis(0)) * 20))
-            motors[3]:set_speed(round((-axis(3) - axis(0)) * 20))
-            motors[4]:set_speed(round((-axis(1) + axis(4) - axis(5)) * 20))
-            motors[5]:set_speed(round((-axis(1) + axis(4) - axis(5)) * 20))
+            motors[1]:set_speed(round((axis(1) + axis(4) - axis(5)) * 9))
+            motors[2]:set_speed(round((-axis(3) + axis(0)) * 9))
+            motors[3]:set_speed(round((-axis(3) - axis(0)) * 9))
+            motors[4]:set_speed(round((-axis(1) + axis(4) - axis(5)) * 9))
+            motors[5]:set_speed(round((-axis(1) + axis(4) - axis(5)) * 9))
         end
 
         for _, m in ipairs(motors) do
@@ -139,7 +139,7 @@ function loop()
 
         if plot.Begin("Vitesse moteur##plot", 320, 240) then
             plot.x_axis_limits(0, 1000, "always")
-            plot.y_axis_limits(-20, 20, "always")
+            plot.y_axis_limits(-9, 9, "always")
             for _, m in ipairs(motors) do
                 m:display_plot()
             end
