@@ -72,9 +72,9 @@ function loop()
 
 
     if gamepad.is_button_pressed(0, 11) then
-        udp.send("#LEDB,1!\n")
+        udp.send("#0l1!\n")
     elseif gamepad.is_button_released(0, 11) then
-        udp.send("#LEDB,0!\n")
+        udp.send("#0l0!\n")
     end
 
     ImGui.SetNextWindowPos(0, 0)
