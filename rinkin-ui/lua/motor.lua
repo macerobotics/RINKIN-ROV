@@ -1,5 +1,11 @@
 local motor = {}
 
+function clamp(x, a, b)
+    if x < a then return a
+    elseif x > b then return b
+    else return x end
+end
+
 function motor:new(n)
     local m = {
         n = n,
@@ -10,7 +16,10 @@ function motor:new(n)
 end
 
 function motor:set_speed(s)
-    self.speed = s
+    if s ~= self.speed then
+        self.speed = clamp(s, -9, 9)
+        self:send_speed()
+    end
 end
 
 function motor:send_speed()
