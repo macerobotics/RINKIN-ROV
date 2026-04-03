@@ -57,6 +57,7 @@ func main() {
 		case serialMsg := <-serialChan:
 			if clientAddr != nil {
 				fmt.Printf("received from uart: %s\n", serialMsg)
+				serialMsg = fmt.Sprintf("#battery,%s!", serialMsg)
 				conn.WriteToUDP([]byte(serialMsg), clientAddr)
 			}
 		case imuMsg := <-imuChan:
