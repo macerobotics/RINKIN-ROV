@@ -34,6 +34,7 @@ function setup()
     --local ip = "192.168.0.1"
     --local ip = "192.168.10.90"
     local ip = "192.168.4.1"
+    --local ip = "10.3.141.1"
     v = video.new("rtsp://" .. ip .. ":8554/cam", video_resolution.x, video_resolution.y)
     udp.init(ip, 1234)
     heading = plot.new("heading", 1000)
