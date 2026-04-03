@@ -26,11 +26,12 @@ func main() {
 	defer conn.Close()
 
 	mode := &serial.Mode{
-		BaudRate: 9600,
+		BaudRate: 115200,
 		DataBits: 8,
 		Parity:   serial.NoParity,
 		StopBits: serial.OneStopBit,
 	}
+	//port, err := serial.Open("/dev/ttyAMA0", mode)
 	port, err := serial.Open("/dev/ttyS0", mode)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
