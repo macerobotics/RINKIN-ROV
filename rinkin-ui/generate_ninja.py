@@ -145,7 +145,7 @@ for target_name, target in targets.items():
     #writer.rule("cpp_debug", "$cxx $cpp_flags_debug -MD -MF $out.d $cflags -c -o $out $in", depfile="$out.d")
     writer.rule(f"cpp_release_{target_name}", f"$cxx_{target_name} $cpp_flags_{target_name} -MD -MF $out.d $cflags -c -o $out $in", depfile="$out.d")
     writer.rule(f"link_{target_name}", f"$cxx_{target_name} -o $out $in $ldflags")
-    writer.rule(f"make_{target_name}", f"make CC={cc} CXX={cxx} $makefile $ar RANLIB={ranlib} -j8 -C $dir $target $options")
+    writer.rule(f"make_{target_name}", f"make CC={cc} CXX={cxx} $makefile $ar RANLIB={ranlib} -j8 -C $dir $target $options", restat = False)
     writer.rule(f"configure_{target_name}", "mkdir -p $build_dir && cd $build_dir && $env_vars $cmd $flags", generator=True)
     writer.rule(f"copy_{target_name}", f"cp -r $in build/{target_name}")
 
@@ -158,7 +158,7 @@ for target_name, target in targets.items():
 
     for src, obj in zip(srcs, objs):
         #writer.build("build/debug/" + obj, "cpp_debug", src)
-        writer.build(f"build/{target_name}/" + obj, f"cpp_release_{target_name}", src, implicit=static_libs)
+        writer.build(f"build/{target_name}/" + obj, f"cpp_release_{target_name}", src)
     #writer.build("bin/debug/rinkin", "link", ["build/debug/" + o for o in objs] + [libraylib_a, liblua_a] + lib_ffmpeg_a + [libz_a])
     writer.build(f"bin/{target_name}/{target['exe']}", f"link_{target_name}", [f"build/{target_name}/" + o for o in objs] + static_libs, variables={"ldflags": " ".join(target["ldflags"])})
 
