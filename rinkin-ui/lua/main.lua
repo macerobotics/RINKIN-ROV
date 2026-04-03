@@ -12,6 +12,7 @@ for i = 1, 5 do
     table.insert(motors, motor:new(i))
 end
 
+battery = 0.0
 
 gamepad_enabled = true
 
@@ -52,8 +53,9 @@ function setup()
         elseif command == "roll" then
             model.set_roll(param)
             roll:append(param)
-        elseif command == "BAT" then
+        elseif command == "battery" then
         	print("batterie:", param)
+            battery = (tonumber(param) * 3.3 / 65535) / 0.234
         end
     end
 
@@ -120,6 +122,8 @@ function loop()
         if ImGui.Button("Batterie") then
             udp.send("#0b0!\n")
         end
+        ImGui.SameLine()
+        ImGui.Text(tostring(battery))
 
         gamepad_enabled = ImGui.Checkbox("Gamepad activé", gamepad_enabled)
 
