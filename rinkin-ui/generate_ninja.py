@@ -154,21 +154,21 @@ for target_name, target in targets.items():
 
     configure_flags = " ".join(ffmpeg_configure_flags + target["ffmpeg-extra-flags"])
     writer.build(f"{ffmpeg_build_dir}/Makefile", f"configure_{target_name}", inputs=None, variables={"build_dir": ffmpeg_build_dir, "cmd": "../../../lib/ffmpeg-8.0/configure", "flags": configure_flags})
-    writer.build(lib_ffmpeg_a, f"make_{target_name}", variables={"dir": ffmpeg_build_dir}, implicit=f"{ffmpeg_build_dir}/Makefile")
+    writer.build(lib_ffmpeg_a, f"make_{target_name}", f"{ffmpeg_build_dir}/Makefile", variables={"dir": ffmpeg_build_dir})
 
     for src, obj in zip(srcs, objs):
         #writer.build("build/debug/" + obj, "cpp_debug", src)
         writer.build(f"build/{target_name}/" + obj, f"cpp_release_{target_name}", src, implicit=static_libs)
     #writer.build("bin/debug/rinkin", "link", ["build/debug/" + o for o in objs] + [libraylib_a, liblua_a] + lib_ffmpeg_a + [libz_a])
-    writer.build(f"bin/{target_name}/rinkin", f"link_{target_name}", [f"build/{target_name}/" + o for o in objs] + static_libs, variables={"ldflags": " ".join(target["ldflags"])})
+    writer.build(f"bin/{target_name}/{target['exe']}", f"link_{target_name}", [f"build/{target_name}/" + o for o in objs] + static_libs, variables={"ldflags": " ".join(target["ldflags"])})
 
     makefile_options = ["PLATFORM=PLATFORM_DESKTOP"]
     if target_name == "windows":
         makefile_options.append("PLATFORM_OS=WINDOWS")
     elif target_name == "rpi":
         makefile_options.append("GRAPHICS=GRAPHICS_API_OPENGL_21")
-    writer.build(libraylib_a, f"make_{target_name}", variables={"dir": raylib_build_dir, "target": " ".join(makefile_options)}, implicit=raylib_build_dir)
-    writer.build(liblua_a, f"make_{target_name}", variables={"dir": lua_build_dir, "target": target["lua-target"], "ar": f'AR="{ar} rcu"'}, implicit=lua_build_dir)
+    writer.build(libraylib_a, f"make_{target_name}", raylib_build_dir, variables={"dir": raylib_build_dir, "target": " ".join(makefile_options)})
+    writer.build(liblua_a, f"make_{target_name}", lua_build_dir, variables={"dir": lua_build_dir, "target": target["lua-target"], "ar": f'AR="{ar} rcu"'})
 
     # zlib
 
