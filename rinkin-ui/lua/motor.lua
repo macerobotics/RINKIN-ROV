@@ -23,7 +23,7 @@ end
 
 function motor:slider()
     local modified
-    self.speed, modified = ImGui.SliderInt("Vitesse moteur " .. tostring(self.n), self.speed, -20, 20)
+    self.speed, modified = ImGui.SliderInt("Vitesse moteur " .. tostring(self.n), self.speed, -9, 9)
     if modified then
         self:send_speed()
     end
