@@ -5,7 +5,6 @@ import glob
 
 
 # TODO:
-# - strip in release mode
 # - debug / release for linux
 # - put back -j
 
@@ -128,6 +127,7 @@ for target_name, target in targets.items():
         cxx = f"{target['prefix']}g++"
         ar = f"{target['prefix']}ar"
         ranlib = f"{target['prefix']}ranlib"
+        strip = f"{target['prefix']}strip"
         writer.variable(f"cc_{target_name}", cc)
         writer.variable(f"cxx_{target_name}", cxx)
     except KeyError:
@@ -135,6 +135,7 @@ for target_name, target in targets.items():
         cxx = "g++"
         ar = "ar"
         ranlib = "ranlib"
+        strip = "strip"
         writer.variable(f"cc_{target_name}", cc)
         writer.variable(f"cxx_{target_name}", cxx)
 
@@ -144,21 +145,22 @@ for target_name, target in targets.items():
 
     #writer.rule("cpp_debug", "$cxx $cpp_flags_debug -MD -MF $out.d $cflags -c -o $out $in", depfile="$out.d")
     writer.rule(f"cpp_release_{target_name}", f"$cxx_{target_name} $cpp_flags_{target_name} -MD -MF $out.d $cflags -c -o $out $in", depfile="$out.d")
-    writer.rule(f"link_{target_name}", f"$cxx_{target_name} -o $out $in $ldflags")
+    writer.rule(f"link_{target_name}", f"$cxx_{target_name} -o $out $in $ldflags && {strip} $out")
     writer.rule(f"make_{target_name}", f"make CC={cc} CXX={cxx} $makefile $ar RANLIB={ranlib} -j8 -C $dir $target $options", restat = True)
-    writer.rule(f"configure_{target_name}", "mkdir -p $build_dir && cd $build_dir && $env_vars $cmd $flags", generator=True)
+    writer.rule(f"configure_{target_name}", "mkdir -p $build_dir && cd $build_dir && $env_vars $cmd $flags && touch configure.stamp", generator=True)
     writer.rule(f"copy_{target_name}", f"cp -rn $in build/{target_name}", generator=True)
 
     writer.build(raylib_build_dir, f"copy_{target_name}", "lib/raylib")
     writer.build(lua_build_dir, f"copy_{target_name}", "lib/lua-5.4.8")
 
     configure_flags = " ".join(ffmpeg_configure_flags + target["ffmpeg-extra-flags"])
-    writer.build(f"{ffmpeg_build_dir}/Makefile", f"configure_{target_name}", inputs=None, variables={"build_dir": ffmpeg_build_dir, "cmd": "../../../lib/ffmpeg-8.0/configure", "flags": configure_flags})
-    writer.build(lib_ffmpeg_a, f"make_{target_name}", f"{ffmpeg_build_dir}/Makefile", variables={"dir": ffmpeg_build_dir})
+    writer.build(f"{ffmpeg_build_dir}/configure.stamp", f"configure_{target_name}", inputs=None, variables={"build_dir": ffmpeg_build_dir, "cmd": "../../../lib/ffmpeg-8.0/configure", "flags": configure_flags})
+    writer.build(lib_ffmpeg_a, f"make_{target_name}", f"{ffmpeg_build_dir}/configure.stamp", variables={"dir": ffmpeg_build_dir})
 
     for src, obj in zip(srcs, objs):
         #writer.build("build/debug/" + obj, "cpp_debug", src)
-        writer.build(f"build/{target_name}/" + obj, f"cpp_release_{target_name}", src)
+        implicit = f"{ffmpeg_build_dir}/configure.stamp" if "lua_video.c" in src else None
+        writer.build(f"build/{target_name}/" + obj, f"cpp_release_{target_name}", src, implicit=implicit)
     #writer.build("bin/debug/rinkin", "link", ["build/debug/" + o for o in objs] + [libraylib_a, liblua_a] + lib_ffmpeg_a + [libz_a])
     writer.build(f"bin/{target_name}/{target['exe']}", f"link_{target_name}", [f"build/{target_name}/" + o for o in objs] + static_libs, variables={"ldflags": " ".join(target["ldflags"])})
 
@@ -174,10 +176,10 @@ for target_name, target in targets.items():
 
     if target_name != "windows":
         try:
-            writer.build(f"{zlib_build_dir}/Makefile", f"configure_{target_name}", variables={"build_dir": zlib_build_dir, "env_vars": f"CROSS_PREFIX={target['prefix']}", "cmd": "../../../lib/zlib/configure", "flags": ""})
+            writer.build(f"{zlib_build_dir}/configure.stamp", f"configure_{target_name}", variables={"build_dir": zlib_build_dir, "env_vars": f"CROSS_PREFIX={target['prefix']}", "cmd": "../../../lib/zlib/configure", "flags": ""})
         except KeyError:
-            writer.build(f"{zlib_build_dir}/Makefile", f"configure_{target_name}", variables={"build_dir": zlib_build_dir, "cmd": "../../../lib/zlib/configure", "flags": ""})
-        writer.build(libz_a, f"make_{target_name}", variables={"dir": zlib_build_dir}, implicit=f"{zlib_build_dir}/Makefile")
+            writer.build(f"{zlib_build_dir}/configure.stamp", f"configure_{target_name}", variables={"build_dir": zlib_build_dir, "cmd": "../../../lib/zlib/configure", "flags": ""})
+        writer.build(libz_a, f"make_{target_name}", variables={"dir": zlib_build_dir}, implicit=f"{zlib_build_dir}/configure.stamp")
     else:
         writer.build(zlib_build_dir, f"copy_{target_name}", "lib/zlib")
         writer.build(libz_a, f"make_{target_name}", variables={"dir": zlib_build_dir, "makefile": "-f win32/Makefile.gcc", "options": f"PREFIX={target['prefix']}"}, implicit=zlib_build_dir)
