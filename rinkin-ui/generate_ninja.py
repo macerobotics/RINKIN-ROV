@@ -32,6 +32,9 @@ targets = {
             "-lncrypt",
             "-lsecur32",
             "-lcrypt32",
+            "-static",
+            "-static-libstdc++",
+            "-static-libgcc"
         ],
         "lua-target": "mingw"
     },
@@ -94,6 +97,7 @@ srcs += ["lib/imgui/" + f for f in ["imgui.cpp", "imgui_demo.cpp", "imgui_draw.c
 srcs += ["lib/rlImGui/rlImGui.cpp"]
 srcs += ["lib/implot/" + f for f in ["implot.cpp", "implot_items.cpp"]]
 objs = [os.path.splitext(f)[0] + ".o" for f in srcs]
+lua_scripts = glob.glob("lua/**/*.lua", recursive=True)
 
 writer = ninja_syntax.Writer(sys.stdout)
 
@@ -149,6 +153,8 @@ for target_name, target in targets.items():
     writer.rule(f"make_{target_name}", f"make CC={cc} CXX={cxx} $makefile $ar RANLIB={ranlib} -j8 -C $dir $target $options", restat = True)
     writer.rule(f"configure_{target_name}", "mkdir -p $build_dir && cd $build_dir && $env_vars $cmd $flags && touch configure.stamp", generator=True)
     writer.rule(f"copy_{target_name}", f"cp -rn $in build/{target_name}", generator=True)
+    zip_path = f"bin/{target_name}/rinkin-{target_name}.zip"
+    writer.rule(f"zip_{target_name}", f"zip -j {zip_path} $in && zip -r {zip_path} $lua_scripts", generator=True)
 
     writer.build(raylib_build_dir, f"copy_{target_name}", "lib/raylib")
     writer.build(lua_build_dir, f"copy_{target_name}", "lib/lua-5.4.8")
@@ -163,6 +169,7 @@ for target_name, target in targets.items():
         writer.build(f"build/{target_name}/" + obj, f"cpp_release_{target_name}", src, implicit=implicit)
     #writer.build("bin/debug/rinkin", "link", ["build/debug/" + o for o in objs] + [libraylib_a, liblua_a] + lib_ffmpeg_a + [libz_a])
     writer.build(f"bin/{target_name}/{target['exe']}", f"link_{target_name}", [f"build/{target_name}/" + o for o in objs] + static_libs, variables={"ldflags": " ".join(target["ldflags"])})
+    writer.build(f"bin/{target_name}/rinkin-{target_name}.zip", f"zip_{target_name}", f"bin/{target_name}/{target['exe']}", variables={"lua_scripts": lua_scripts}, implicit=lua_scripts)
 
     makefile_options = ["PLATFORM=PLATFORM_DESKTOP"]
     if target_name == "windows":
