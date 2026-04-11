@@ -1,5 +1,5 @@
 -- commandes moteurs :
--- #0m20!   <- moteur 0, vitesse 20
+-- #0m9!   <- moteur 0, vitesse 9
 -- moteur de 0 à 4, vitesse de -9 à 9
 
 local motor = require("motor")
