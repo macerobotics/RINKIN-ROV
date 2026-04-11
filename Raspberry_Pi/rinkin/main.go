@@ -6,6 +6,8 @@ import (
 	"log"
 	"net"
 	"os"
+	"regexp"
+	"strconv"
 	"time"
 
 	"go.bug.st/serial"
@@ -13,6 +15,8 @@ import (
 	"periph.io/x/conn/v3/i2c/i2creg"
 	"periph.io/x/host/v3"
 )
+
+var delay = 35 * time.Millisecond
 
 func main() {
 	addr, err := net.ResolveUDPAddr("udp", "0.0.0.0:1234")
@@ -39,30 +43,29 @@ func main() {
 	defer port.Close()
 
 	udpChan, addrChan := udpRecv(conn)
-	serialChan := serialRecv(port)
+	serialRxChan := serialRx(port)
+	serialTxChan := serialTx(port)
 	imuChan := imu()
 
 	var clientAddr *net.UDPAddr = nil
+
 	for {
 		select {
 		case addr := <-addrChan:
 			clientAddr = addr
 		case udpPacket := <-udpChan:
-			n, err := port.Write([]byte(udpPacket))
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "failed to write to serial port: %s\n", err)
-			} else {
-				fmt.Printf("wrote %d bytes to the serial port:\n", n)
-				fmt.Printf("udpPacket = %s\n", udpPacket)
-			}
-		case serialMsg := <-serialChan:
+			fmt.Printf("pc\t->\trpi\t%s\n", strconv.Quote(udpPacket))
+			serialTxChan <- udpPacket
+		case serialMsg := <-serialRxChan:
+			fmt.Printf("pico\t->\trpi\t%s\n", strconv.Quote(serialMsg))
 			if clientAddr != nil {
-				fmt.Printf("received from uart: %s\n", serialMsg)
 				serialMsg = fmt.Sprintf("#battery,%s!", serialMsg)
+				fmt.Printf("rpi\t->\tpc\t%s\n", strconv.Quote(serialMsg))
 				conn.WriteToUDP([]byte(serialMsg), clientAddr)
 			}
 		case imuMsg := <-imuChan:
 			if clientAddr != nil {
+				fmt.Printf("rpi\t->\tpc\t%s\n", strconv.Quote(imuMsg))
 				conn.WriteToUDP([]byte(imuMsg), clientAddr)
 			}
 		}
@@ -80,15 +83,15 @@ func udpRecv(conn *net.UDPConn) (<-chan string, chan *net.UDPAddr) {
 				fmt.Fprintln(os.Stderr, err)
 				continue
 			}
-			fmt.Printf("received %s\n", buffer[:n])
+			msg := string(buffer[:n])
 			addrChan <- clientAddr
-			msgChan <- string(buffer[:n])
+			msgChan <- string(msg)
 		}
 	}()
 	return msgChan, addrChan
 }
 
-func serialRecv(port serial.Port) <-chan string {
+func serialRx(port serial.Port) <-chan string {
 	c := make(chan string, 10)
 	scanner := bufio.NewScanner(port)
 	go func() {
@@ -97,6 +100,49 @@ func serialRecv(port serial.Port) <-chan string {
 		}
 	}()
 	return c
+}
+
+func serialTx(port serial.Port) chan<- string {
+	c1 := make(chan string, 1024)
+	c2 := make(chan string)
+	go func() {
+		for {
+			s := <-c2
+			_, err := port.Write([]byte(s))
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "failed to write to serial port: %s\n", err)
+			} else {
+				fmt.Printf("rpi\t->\tpico\t%s\n", strconv.Quote(s))
+			}
+			time.Sleep(delay)
+		}
+	}()
+
+	go func() {
+		r, _ := regexp.Compile(`#(\d+[mlb])(-*\d+)!\n`)
+		q := NewQueue()
+		for {
+		loop1:
+			for {
+				select {
+				case s := <-c1:
+					l := r.FindStringSubmatch(s)
+					if len(l) == 3 {
+						name := l[1]
+						value := l[2]
+						q.Push(name, value)
+					}
+				default:
+					break loop1
+				}
+			}
+			if s := q.Pop(); s != nil {
+				c2 <- fmt.Sprintf("#%s%s!\n", s.slot, s.value)
+			}
+		}
+	}()
+
+	return c1
 }
 
 func imu() <-chan string {
