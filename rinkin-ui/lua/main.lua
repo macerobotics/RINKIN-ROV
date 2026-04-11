@@ -4,23 +4,20 @@
 
 local motor = require("motor")
 
-video_resolution = {x = 640, y = 480}
+--local ip = "192.168.0.1"
+--local ip = "192.168.10.90"
+local ip = "192.168.4.1"
+--local ip = "10.3.141.1"
 
-
-motors = {}
+local video_resolution = {x = 640, y = 480}
+local motors = {}
 for i = 1, 5 do
     table.insert(motors, motor:new(i))
 end
-
-battery = 0.0
-
-gamepad_enabled = true
+local battery = 0.0
+local gamepad_enabled = true
 
 function setup()
-    --local ip = "192.168.0.1"
-    --local ip = "192.168.10.90"
-    local ip = "192.168.4.1"
-    --local ip = "10.3.141.1"
     v = video.new("rtsp://" .. ip .. ":8554/cam", video_resolution.x, video_resolution.y)
     udp.init(ip, 1234)
     heading = plot.new("heading", 1000)
