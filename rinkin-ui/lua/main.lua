@@ -199,7 +199,7 @@ function round(x)
     if x >= 0 then
         x = math.floor(x + 0.5)
     else
-        x = math.ceil(x + 0.5)
+        x = math.ceil(x - 0.5)
     end
     return math.tointeger(x)
 end
