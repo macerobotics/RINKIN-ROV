@@ -16,18 +16,12 @@ battery = 0.0
 
 gamepad_enabled = true
 
-pow = 1.0
-
 local function axis(i)
     local val = gamepad.get_axis_movement(0, i)
     if i == 4 or i == 5 then
         val = (val + 1) / 2
     end
-    if val >= 0 then
-        return val ^ pow
-    else
-        return - math.abs(val) ^ pow
-    end
+    return val
 end
 
 function setup()
@@ -127,8 +121,6 @@ function loop()
         ImGui.Text(tostring(battery))
 
         gamepad_enabled = ImGui.Checkbox("Gamepad activé", gamepad_enabled)
-
-        pow = ImGui.SliderFloat("pow", pow, 0, 5)
 
         if(gamepad_enabled) then
             motors[1]:set_speed(round((axis(1) + axis(4) - axis(5)) * 9))
