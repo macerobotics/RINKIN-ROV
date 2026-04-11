@@ -1,216 +1,166 @@
-# Robot MR-25
-# Auteur : Mace Robotics
-# Date dernière modification: 23/09/2025
-# Firmware du robot MR-25 (carte Raspberry Pi Pico)
-# Version : 0.42
+import utime
+from machine import Pin, PWM, UART
 
-#lib
-import time, re
-import robot
-import uasyncio as asyncio
-from machine import UART, Pin, I2C
-import gc
+# --- Initialisation du matériel ---
 
+# Lecture de la tension batterie via ADC sur la broche GP27
+batt = machine.ADC(Pin(27, mode=Pin.IN))
 
-# CONSTANTES
-VERSION_FIRMWARE = 0.41
+# Bouton de démarrage des ESC (actif à l'état bas, résistance pull-up interne)
+fireup_pin = machine.Pin(18, Pin.IN, Pin.PULL_UP)
 
+# LED intégrée au Pico (GP25)
+led_bultin = machine.Pin(25, machine.Pin.OUT)
 
-# variables globales
-_data_simple = 0 # si reception d'une commande simple sans paramètre (exemple : #BAT! ou #FV!)
-deux_para = 0 # si reception d'une commande avec 2 paramètres
-send_data = 0
-data_send = 0
-cmd_recu = 0
+# LEDs externes
+led1 = machine.Pin(7, machine.Pin.OUT)
+led2 = machine.Pin(8, machine.Pin.OUT)
 
-# configuration du l'UART, communication avec le Pi
-uart0 = UART(0, baudrate=921600 , tx=Pin(16), rx=Pin(17))
+# Communication série UART0 avec le Raspberry Pi (9600 bauds, TX=GP16, RX=GP17)
+# Brochage côté Raspi : 3e pin droite = GND | 4 = TX | 5 = RX
+raspi = machine.UART(0, baudrate=9600, tx=Pin(16), rx=Pin(17))
 
-# broche GP25 ou WL_GPI00 en sortie (led de la pico)
-led_int = Pin(25, Pin.OUT)  
+# Création de 5 canaux PWM pour les ESC (broches GP0 à GP4, fréquence 50 Hz)
+esc = []
+for n in range(5):
+    esc.append(PWM(Pin(n, mode=Pin.OUT), freq=50))
 
-# led low batterie
-led_low_bat = Pin(22, Pin.OUT)  
-led_low_bat.value(0)
+# Variables globales :
+# moters : valeurs de consigne des 5 moteurs
+# leds   : état des 2 LEDs
+# trig   : déclencheur (non utilisé ici)
+# count  : compteur de commandes reçues
+moters, leds, trig, count = [0] * 5, [0] * 2, 0, 0
 
-# bip de start
-print("Robot MR-25 Start")
-robot.buzzer(500, 65_536/2)
-time.sleep(0.5)
-robot.buzzerStop()
-
-'''
-robot.turnAngle(45)
-# TEST
-while 1:
-    print("orientation = ", robot.orientation())
-    print("positionX = ", robot.positionX())
-    print("positionY = ", robot.positionY())
-    time.sleep(2)
-'''
+print("\nNico sub projet 11/03/26\n")
 
 
+# --- Fonctions ---
 
-# reception UART
-async def task1():
-    global send_data, data_send
-    writer = asyncio.StreamWriter(uart0, {})
-    while True:
-        if(send_data == 1):
-          send_data = 0
-          writer.write(str(data_send)+'\n')
-          #print(str(data_send))
-          
-          await writer.drain()
-        await asyncio.sleep(0.2)
+def fireup_ESC():
+    """Séquence d'armement des ESC :
+    1. Gaz au minimum pendant 5 secondes
+    2. Gaz au milieu pendant 7 secondes
+    Les ESC sont ainsi calibrés et armés."""
+    for n in range(5):
+        esc[n].duty_u16(2700)           # Position gaz minimum (≈1000 µs)
+    print("throttle in bottom position")
+    for n in range(5, 1, -1):           # Compte à rebours 5..2
+        print(n)
+        utime.sleep(1)
 
+    print("throttle in middle position")
+    for n in range(5):
+        esc[n].duty_u16(4950)           # Position gaz milieu (≈1500 µs)
+    for n in range(7, 1, -1):           # Compte à rebours 7..2
+        print(n)
+        utime.sleep(1)
 
-
-async def uart_receiver():
-    global _data_simple, deux_para, send_data, data_send
-    reader = asyncio.StreamReader(uart0)
-    while True:
-        try:
-          message = await reader.readline()
-
-          data = message.decode('utf-8')#conversion en chaine de caractère
-          print("data recu:", data)
-          ################################
-          # extraction de la commande :
-          try:
-            cmd_recu = re.search(r'#([A-Za-z]+),', data)
-            cmd_recu = str(cmd_recu.group(1)) # conversion
-            print("cmd_recu :", cmd_recu)
-            _data_simple = 0
-          except: # c'est une commande avec un paramètre
-            _data_simple = 1 # reception d'une commande simple, sans paramètre
-          
-          
-          if (_data_simple == 1):
-            # reception d'une commande simple sans paramètre
-            cmd_recu = re.search(r'#([A-Za-z]+)!', data)
-            cmd_recu = str(cmd_recu.group(1)) # conversion
-          else:
-            ################################
-            # extraction du paramètre n°1 :
-            #parametre1_recu = re.search(r",(\d+)", data)
-            #print("Extraction du paramètre n°1")
-            try:
-              parametre1_recu = re.search(r',\s*(-?\d+)', data)
-              print("Paramètre n°1 :", parametre1_recu.group(1))
-              deux_para = 1
-              parametre1_recu = str(parametre1_recu.group(1))
-              print("parametre1_recu:", parametre1_recu)
-              print("Commande avec 2 paramètres")
-            except:
-              # S'il y a 1 paramètre : 
-              parametre1_recu = re.search(r',([0-9]+)!', data)
-              parametre1_recu = str(parametre1_recu.group(1))
-              #print("parametre1_recu:", parametre1_recu)
-            ################################
-            # extraction du paramètre n°2 :
-            if (deux_para == 1):
-              try:
-                parametre2_recu = re.search(r',([0-9]+)!', data)
-                parametre2_recu = int(parametre2_recu.group(1))
-                #print("parametre2_recu", parametre2_recu)
-              except:
-                print("Pas de paramètre n°2")
-				
-        except:
-          print("Erreur reception")
-          
-        
-        #print('CMD RECU:', cmd_recu)
-
-        if(cmd_recu == "FV"):
-            send_data = 1
-            data_send = VERSION_FIRMWARE
-
-        if(cmd_recu == "BAT"):
-            send_data = 1
-            data_send = robot.battery()
-
-        if(cmd_recu == "PR"):
-            send_data = 1
-            data_send = robot.proxRead(parametre1_recu)
-            print("send data")
-
-        if(cmd_recu == "MF"):
-            robot.forward(int(parametre1_recu))
-
-        if(cmd_recu == "FM"):
-            robot.forwardmm(int(parametre1_recu))
-            
-        if(cmd_recu == "TA"):
-            print("parametre1_recu = ", int(parametre1_recu))
-            robot.turnAngle(int(parametre1_recu))
-
-        if(cmd_recu == "MB"):
-            robot.back(int(parametre1_recu))
-            print("send data")
-
-        if(cmd_recu == "STP"):
-            send_data = 0
-            robot.stop()
-
-        if(cmd_recu == "TR"):
-            robot.turnRight(int(parametre1_recu))
-            
-        if(cmd_recu == "TL"):
-            robot.turnLeft(int(parametre1_recu))           
-
-        if(cmd_recu == "MOTR"):
-            robot.motorRight(int(parametre1_recu), int(parametre2_recu))
-            
-        if(cmd_recu == "MOTL"):
-            robot.motorLeft(int(parametre1_recu), int(parametre2_recu))
-        
-        # controle led RGB
-        if(cmd_recu == "RGB"):
-            print("parametre1_recu :", parametre1_recu)
-            chiffres =  [int(c) for c in str(parametre1_recu) if c in ['0', '1']]
-            print("chiffres",chiffres)
-            robot.ledRgb(chiffres[0],chiffres[1],chiffres[2])
-            
-        # lecture encodeur left
-        if(cmd_recu == "EDL"):
-            send_data = 1
-            data_send = robot.encoderLeft()
-
-        # lecture encodeur right
-        if(cmd_recu == "EDR"):
-            send_data = 1
-            data_send = robot.encoderRight()
-            
-        # Encodeur reset
-        if(cmd_recu == "ERZ"):
-            data_send = robot.encoderReset()
-            
-        # controle buzzer
-        if(cmd_recu == "BUZ"):
-            robot.buzzer(int(parametre1_recu), 65536/2)
-            
-        # stop buzzer
-        if(cmd_recu == "BUZS"):
-            robot.buzzerStop()
-            
-        # contole de la led low batt
-        if(cmd_recu == "LEDB"):
-            if (int(parametre1_recu) == 1):
-              led_low_bat.value(1)
-            else:
-              led_low_bat.value(0)
-            
-        #print("fin reception")
-            
-async def main():
-    results = await asyncio.gather(uart_receiver(), task1())
-    print(results)
-
-asyncio.run(main())
+    print("ESC fired up")
+    # Clignotement de la LED intégrée x3 pour signaler la fin de l'armement
+    for n in range(3):
+        led_bultin.value(1)
+        utime.sleep(0.1)
+        led_bultin.value(0)
+        utime.sleep(0.1)
 
 
-# End of file
+def map(value, istart, istop, ostart, ostop):
+    """Ré-échelle une valeur d'une plage d'entrée vers une plage de sortie.
+    Équivalent de la fonction map() d'Arduino."""
+    return int(ostart + (ostop - ostart) * ((value - istart) / (istop - istart)))
 
 
+def is_valid_command(text):
+    """Valide et décode une commande reçue depuis le Raspberry Pi.
+    Format attendu : #XYZ! (commence par '#', se termine par '!')
+    Longueur totale : 2 à 6 caractères."""
+    try:
+        text = text.decode('utf-8').strip()
+    except:
+        print("rubbish from Raspi", text)   # Données illisibles / corrompues
+        return
+
+    temp = len(text)
+
+    if temp == 0:
+        print("0 chars from raspi")          # Trame vide
+        return
+    if temp > 6:
+        print("chars > 6")                   # Trame trop longue
+        return
+    if text[0] != '#':
+        print("no #")                        # Pas de marqueur de début
+        return
+    if text[-1] != '!':
+        print("no !")                        # Pas de marqueur de fin
+        return
+
+    print('>' + text + '<', end=" \t  ")    # Commande valide, affichage debug
+
+    cmd = text[1:-1]                         # Extraction du contenu (sans '#' et '!')
+
+    if cmd[1] == 'm':                        # Commande moteur (ex: #0m5!)
+        get_moter_int(text[1:-1])
+
+    if cmd[1] == 'l':                        # Commande LED (ex: #0l1!)
+        wh = int(text[1])                    # Numéro de la LED ciblée
+        if cmd[0] == '0':                    # '0' = éteindre la LED
+            leds[0] = int(cmd[-1])
+            led1.value(leds[0])
+        else:                                # Autre = allumer la LED
+            leds[1] = int(cmd[-1])
+            led2.value(leds[1])
+        disp_data()
+
+    if cmd[1] == 'b':                        # Commande batterie : renvoie la tension au Raspi
+        batt_volt = str(batt.read_u16())
+        print("battery voltage =", batt_volt)
+        batt_volt += '\n'
+        raspi.write(batt_volt.encode('utf-8'))
+
+
+def get_moter_int(comm):
+    """Extrait le numéro de moteur et la valeur de consigne depuis la commande,
+    met à jour le tableau moters[] et applique la vitesse à l'ESC correspondant.
+    Format de comm (sans # et !) : '0m5' → moteur 0, consigne 5"""
+    global moters
+    wh = int(comm[0])          # Numéro du moteur (0 à 4)
+    value = int(comm[2:])      # Valeur de consigne (ex: -9 à 9)
+    moters[wh] = value
+    duty = ESC_speed(value)    # Conversion en cycle utile PWM
+    esc[wh].duty_u16(duty)
+    disp_data()
+
+
+def ESC_speed(speed):
+    """Convertit une consigne de vitesse [-9 ; +9] en valeur de cycle utile
+    pour le signal PWM ESC (plage 3650 à 6350 sur 16 bits, soit ≈1100 à 1900 µs)."""
+    temp = map(speed, -9, 9, 3650, 6350)
+    return temp
+
+
+def disp_data():
+    """Affiche l'état de tous les moteurs, des LEDs et le compteur de commandes."""
+    global count
+    count += 1
+    for n in range(5):
+        print("m%d =%3d" % (n + 1, moters[n]), end='   ')
+    print("\tled1 =%3d  led2 =%3d  counter = %4d" % (leds[0], leds[1], count))
+
+
+# --- Programme principal ---
+
+# Lancement de la séquence d'armement des ESC au démarrage
+# (le test sur fireup_pin est commenté → armement systématique)
+# if not fireup_pin.value():
+fireup_ESC()
+
+raspi.flush()   # Vide le buffer UART avant d'entrer dans la boucle principale
+
+# Boucle principale : écoute les commandes UART toutes les 30 ms
+while True:
+    if raspi.any() > 5:             # Au moins 6 octets disponibles dans le buffer
+        data = raspi.readline()     # Lecture d'une ligne complète
+        is_valid_command(data)      # Traitement de la commande
+    utime.sleep_ms(30)              # Pause 30 ms pour ne pas surcharger le CPU
