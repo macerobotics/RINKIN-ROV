@@ -16,14 +16,6 @@ battery = 0.0
 
 gamepad_enabled = true
 
-local function axis(i)
-    local val = gamepad.get_axis_movement(0, i)
-    if i == 4 or i == 5 then
-        val = (val + 1) / 2
-    end
-    return val
-end
-
 function setup()
     --local ip = "192.168.0.1"
     --local ip = "192.168.10.90"
@@ -185,6 +177,14 @@ function loop()
         
     end
     ImGui.End()
+end
+
+function axis(i)
+    local val = gamepad.get_axis_movement(0, i)
+    if i == 4 or i == 5 then
+        val = (val + 1) / 2
+    end
+    return val
 end
 
 function round(x)
