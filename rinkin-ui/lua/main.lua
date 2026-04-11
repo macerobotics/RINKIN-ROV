@@ -46,9 +46,6 @@ function setup()
 end
 
 function loop()
-    if gamepad_enabled then
-     --motors[1]:set_speed(round(-20 * gamepad.get_axis_movement(0, 3)))
-    end
 
     for _, m in ipairs(motors) do
         m:update()
