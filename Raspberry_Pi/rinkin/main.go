@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -29,14 +30,19 @@ func main() {
 	}
 	defer conn.Close()
 
+	portName, err := getPortName()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	mode := &serial.Mode{
 		BaudRate: 115200,
 		DataBits: 8,
 		Parity:   serial.NoParity,
 		StopBits: serial.OneStopBit,
 	}
-	//port, err := serial.Open("/dev/ttyAMA0", mode)
-	port, err := serial.Open("/dev/ttyS0", mode)
+	fmt.Printf("serial port: %s\n", portName)
+	port, err := serial.Open(portName, mode)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
@@ -70,6 +76,20 @@ func main() {
 			}
 		}
 	}
+}
+
+func getPortName() (string, error) {
+	ports, err := serial.GetPortsList()
+	if err != nil {
+		log.Fatal("failed to find a serial port")
+	}
+
+	for _, port := range ports {
+		if port == "/dev/ttyS0" || port == "/dev/ttyAMA0" {
+			return port, nil
+		}
+	}
+	return "", errors.New("failed to find a serial port")
 }
 
 func udpRecv(conn *net.UDPConn) (<-chan string, chan *net.UDPAddr) {
