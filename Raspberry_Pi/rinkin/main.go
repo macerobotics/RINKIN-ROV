@@ -52,6 +52,7 @@ func main() {
 	serialRxChan := serialRx(port)
 	serialTxChan := serialTx(port)
 	imuChan := imu()
+	batInterval := time.Tick(1 * time.Minute)
 
 	var clientAddr *net.UDPAddr = nil
 
@@ -74,6 +75,8 @@ func main() {
 				fmt.Printf("rpi\t->\tpc\t%s\n", strconv.Quote(imuMsg))
 				conn.WriteToUDP([]byte(imuMsg), clientAddr)
 			}
+		case <-batInterval:
+			serialTxChan <- "#0b0!\n"
 		}
 	}
 }
