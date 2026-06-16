@@ -67,6 +67,12 @@ function loop()
             if ImGui.Button("Démarrer") then v:start() end
             ImGui.SameLine()
             if ImGui.Button("Arrêter") then v:stop() end
+            ImGui.SameLine()
+            if ImGui.Button("Capturer image") then
+                local image_name = os.date("%Y%m%d_%H%M%S") .. ".jpg"
+                v:capture_image(image_name)
+            end
+
         ImGui.EndGroup()
         
         ImGui.SameLine()

@@ -205,6 +205,18 @@ int lua_video_display(lua_State *L) {
     return 0;
 }
 
+static int lua_capture_image(lua_State *L) {
+    Video *v = checkvideo(L);
+    const char *file_name = luaL_checkstring(L, 2);
+    if(v->is_running) {
+        v->rgb_frame_mutex.lock();
+        Image img = LoadImageFromTexture(v->texture);
+        ExportImage(img, file_name);
+        v->rgb_frame_mutex.unlock();
+    }
+    return 0;
+}
+
 static int lua_video_to_string(lua_State *L) {
     Video *v = checkvideo(L);
     lua_pushfstring(L, "video: \"%s\"", v->url.c_str());
@@ -228,6 +240,7 @@ static const struct luaL_Reg video_lib_m[] = {
     {"start", lua_video_start},
     {"stop", lua_video_stop},
     {"display", lua_video_display},
+    {"capture_image", lua_capture_image},
     {"__tostring", lua_video_to_string},
     {"__gc", lua_video_gc},
     {nullptr, nullptr},
