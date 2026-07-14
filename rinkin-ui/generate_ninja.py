@@ -56,7 +56,6 @@ targets = {
 ffmpeg_configure_flags = [
     '--disable-encoders',
 	'--disable-hwaccels',
-	'--disable-muxers',
 	'--disable-filters',
 	'--disable-indevs',
 	'--disable-outdevs',

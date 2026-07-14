@@ -19,6 +19,7 @@ local gamepad_enabled = true
 
 function setup()
     v = video.new("rtsp://" .. ip .. ":8554/cam", video_resolution.x, video_resolution.y)
+    --v = video.new("http://www.windsurfbreizh22.com/webcamHD/webcam-rosaires/video.php", video_resolution.x, video_resolution.y)
     udp.init(ip, 1234)
     heading = plot.new("heading", 1000)
     pitch = plot.new("pitch", 1000)
@@ -71,6 +72,17 @@ function loop()
             if ImGui.Button("Capturer image") then
                 local image_name = os.date("%Y%m%d_%H%M%S") .. ".jpg"
                 v:capture_image(image_name)
+            end
+            ImGui.SameLine()
+            if not v:is_recording() then
+                if ImGui.Button("Enregistrer") then
+                    local video_name = os.date("%Y%m%d_%H%M%S") .. ".mp4"
+                    v:start_recording(video_name)
+                end
+            else
+                if ImGui.Button("Arrêter enregistrement") then
+                    v:stop_recording()
+                end
             end
 
         ImGui.EndGroup()

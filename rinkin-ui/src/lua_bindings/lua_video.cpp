@@ -33,6 +33,11 @@ struct Video {
     std::atomic_bool is_running;
     std::mutex rgb_frame_mutex;
     std::thread *thread;
+    struct Recording {
+        std::atomic_bool is_recording, key_frame_received;
+        AVFormatContext *format_ctx;
+        AVStream *video_stream;
+    } recording;
 };
 
 static Video *checkvideo(lua_State *L) {
@@ -81,6 +86,9 @@ static int lua_video_new(lua_State *L) {
     v->texture.height = height;
     v->texture.format = PIXELFORMAT_UNCOMPRESSED_R8G8B8;
     v->texture.mipmaps = 1;
+    v->recording.is_recording = false;
+    v->recording.key_frame_received = false;
+    v->recording.format_ctx = nullptr;
     return 1;
 }
 
@@ -88,15 +96,35 @@ static void thread_func(Video *v) {
     while(v->is_running) {
         while(av_read_frame(v->format_ctx, v->packet) >= 0) {
             if(v->packet->stream_index == v->video_stream->index) {
-                int ret = avcodec_send_packet(v->video_codec_ctx, v->packet);
+                int rc = 0;
+                if(v->recording.is_recording) {
+                    AVPacket packet;
+                    rc = av_packet_ref(&packet, v->packet);
+                    if(rc < 0) {
+                        TraceLog(LOG_ERROR, "av_packet_ref failed");
+                        av_packet_unref(&packet);
+                        goto skip_recording;
+                    }
+                    packet.stream_index = v->video_stream->index;
+                    av_packet_rescale_ts(&packet, v->video_stream->time_base, v->recording.video_stream->time_base);
+                    rc = av_interleaved_write_frame(v->recording.format_ctx, &packet);
+                    if(rc < 0)
+                        TraceLog(LOG_ERROR, "failed to write frame");
+                    av_packet_unref(&packet);
+                    
+                }
+
+                skip_recording:
+
+                rc = avcodec_send_packet(v->video_codec_ctx, v->packet);
                 av_packet_unref(v->packet);
-                if(ret < 0) {
+                if(rc < 0) {
                     TraceLog(LOG_ERROR, "error sending packet");
                     continue;
                 }
-                while(ret >= 0) {
-                    ret = avcodec_receive_frame(v->video_codec_ctx, v->frame);
-                    if(ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) break;
+                while(rc >= 0) {
+                    rc = avcodec_receive_frame(v->video_codec_ctx, v->frame);
+                    if(rc == AVERROR(EAGAIN) || rc == AVERROR_EOF) break;
                     v->rgb_frame_mutex.lock();
                     sws_scale(v->sws_ctx, (uint8_t const *const *)v->frame->data, v->frame->linesize, 0,
                               v->frame->height, v->rgb_frame->data, v->rgb_frame->linesize);
@@ -188,8 +216,12 @@ int lua_video_start(lua_State *L) {
     return 0;
 }
 
+static void stop_recording(Video *v);
+
 int lua_video_stop(lua_State *L) {
     Video *v = checkvideo(L);
+    if(v->recording.is_recording)
+        stop_recording(v);
     video_stop(v);
     return 0;
 }
@@ -217,6 +249,84 @@ static int lua_capture_image(lua_State *L) {
     return 0;
 }
 
+static int lua_start_recording(lua_State *L) {
+    const char *err = nullptr;
+    const char *file_name = nullptr;
+    int rc = 0;
+    Video *v = checkvideo(L);
+    if(!v->is_running) {
+        err = "video stream is not started";
+        goto cleanup0;
+    }
+    if(v->recording.is_recording) {
+        err = "already recording video";
+        goto cleanup0;
+    }
+    file_name = luaL_checkstring(L, 2);
+    rc = avformat_alloc_output_context2(&v->recording.format_ctx, NULL, "mp4", file_name);
+    if(rc < 0) {
+        err =  "failed to start recording";
+        goto cleanup0;
+    }
+    v->recording.video_stream = avformat_new_stream(v->recording.format_ctx, NULL);
+    if(v->recording.video_stream == NULL) {
+        err = "failed to create output stream";
+        goto cleanup1;
+    }
+    rc = avcodec_parameters_copy(v->recording.video_stream->codecpar, v->video_stream->codecpar);
+    if(rc < 0) {
+        err = "failed to copy codec parameters";
+        goto cleanup1;
+    }
+    v->recording.video_stream->time_base = v->video_stream->time_base;
+    rc = avio_open(&v->recording.format_ctx->pb, file_name, AVIO_FLAG_WRITE);
+    if(rc < 0) {
+        err = "failed to open video file";
+        goto cleanup1;
+    }
+    rc = avformat_write_header(v->recording.format_ctx, NULL);
+    if(rc < 0) {
+        err = "failed to write header";
+        goto cleanup2;
+    }
+    v->recording.is_recording = true;
+    return 0;
+
+cleanup2:
+    avio_closep(&v->recording.format_ctx->pb);
+cleanup1:
+    avformat_free_context(v->recording.format_ctx);
+cleanup0:
+    v->recording.format_ctx = nullptr;
+    v->recording.video_stream = nullptr;
+    luaL_error(L, err);
+    return 0;
+}
+
+static void stop_recording(Video *v) {
+    av_write_trailer(v->recording.format_ctx);
+    avio_closep(&v->recording.format_ctx->pb);
+    avformat_free_context(v->recording.format_ctx);
+    v->recording.format_ctx = nullptr;
+    v->recording.video_stream = nullptr;
+    v->recording.is_recording = false;
+    v->recording.key_frame_received = false;
+}
+
+static int lua_stop_recording(lua_State *L) {
+    Video *v = checkvideo(L);
+    if(!v->recording.is_recording)
+        luaL_error(L, "video recording already stopped");
+    stop_recording(v);
+    return 0;
+}
+
+static int lua_is_recording(lua_State *L) {
+    Video *v = checkvideo(L);
+    lua_pushboolean(L, v->recording.is_recording);
+    return 1;
+}
+
 static int lua_video_to_string(lua_State *L) {
     Video *v = checkvideo(L);
     lua_pushfstring(L, "video: \"%s\"", v->url.c_str());
@@ -225,6 +335,8 @@ static int lua_video_to_string(lua_State *L) {
 
 static int lua_video_gc(lua_State *L) {
     Video *v = checkvideo(L);
+    if(v->recording.is_recording)
+        stop_recording(v);
     video_stop(v);
     rlUnloadTexture(v->texture.id);
     v->~Video();
@@ -241,6 +353,9 @@ static const struct luaL_Reg video_lib_m[] = {
     {"stop", lua_video_stop},
     {"display", lua_video_display},
     {"capture_image", lua_capture_image},
+    {"start_recording", lua_start_recording},
+    {"stop_recording", lua_stop_recording},
+    {"is_recording", lua_is_recording},
     {"__tostring", lua_video_to_string},
     {"__gc", lua_video_gc},
     {nullptr, nullptr},
