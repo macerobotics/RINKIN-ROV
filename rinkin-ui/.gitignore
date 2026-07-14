@@ -6,3 +6,5 @@ imgui.ini
 __pycache__
 build.ninja
 .ninja_log
+*.jpg
+*.mp4
