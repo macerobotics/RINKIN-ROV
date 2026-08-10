@@ -1,0 +1,10 @@
+bin
+build
+imgui.ini
+.vscode/compile_commands.json
+.vscode/settings.json
+__pycache__
+build.ninja
+.ninja_log
+*.jpg
+*.mp4

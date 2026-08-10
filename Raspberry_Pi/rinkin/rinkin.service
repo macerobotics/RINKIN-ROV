@@ -1,0 +1,14 @@
+[Unit]
+Description=Rinkin
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/home/rinkin/rinkin/rinkin
+WorkingDirectory=/home/rinkin/rinkin/
+Restart=on-failure
+User=rinkin
+Group=rinkin
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,15 @@
+[submodule "rinkin-ui/lib/imgui"]
+	path = rinkin-ui/lib/imgui
+	url = https://github.com/ocornut/imgui
+[submodule "rinkin-ui/lib/rlImGui"]
+	path = rinkin-ui/lib/rlImGui
+	url = https://github.com/raylib-extras/rlImGui
+[submodule "rinkin-ui/lib/raylib"]
+	path = rinkin-ui/lib/raylib
+	url = https://github.com/raysan5/raylib
+[submodule "rinkin-ui/lib/implot"]
+	path = rinkin-ui/lib/implot
+	url = https://github.com/epezent/implot
+[submodule "rinkin-ui/lib/zlib"]
+	path = rinkin-ui/lib/zlib
+	url = https://github.com/madler/zlib

@@ -1,0 +1,1 @@
+int lua_open_model(struct lua_State *L);
